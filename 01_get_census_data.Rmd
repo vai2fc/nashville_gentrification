@@ -1,0 +1,63 @@
+---
+title: "01 Get Census Data"
+author: "Veronica Ikeshoji-Orlati"
+date: "1/5/2021"
+output: html_document
+---
+# Get 2000 and 2010 census data for each tract in Davidson County, TN
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Load libraries and check APIs
+```{r}
+# Load libraries
+library(censusapi)
+library(tidyverse)
+
+# Force read the R environment file to pull in my census API key
+readRenviron("~/.Renviron")
+
+# Create a new dataframe with the full list of available census APIs
+apis <- listCensusApis()
+
+# Take a look at the available APIs
+View(apis)
+```
+## Get the metadata for the 2000 and 2010 Decennial Census Datasets
+```{r}
+# Create a new dataframe to store the metadata for the 2000 census
+census_2000_meta <- listCensusMetadata(
+ name = 'dec/sf1',
+ vintage = '2000'
+)
+
+# Create a new dataframe to store the metadata for the 2010 census
+census_2010_meta <- listCensusMetadata(
+ name = 'dec/sf1',
+ vintage = '2010'
+)
+
+# Take a look at the metadata dataframes
+# View(census_2000_meta)
+# View(census_2010_meta)
+```
+## Check out the GEO_ID field needed to connect the demographic and geospatial data
+Note that census tracts shifted between 2000 and 2010 so there might have to be separate layers in the map for each year. There appears to be a partial overlap between 2000 and 2010 `GEO_ID`s for Davidson County which I need to investigate further.
+``` {r}
+# For the 2000 data
+tract_geoids_2000 <- getCensus(name = "dec/sf1",
+          vintage = "2000",
+          vars = "GEO_ID",
+          region = "tract:*",
+          regionin = "state:47+county:037")
+
+# For the 2010 data
+tract_geoids_2010 <- getCensus(name = "dec/sf1",
+          vintage = "2010",
+          vars = "GEO_ID",
+          region = "tract:*",
+          regionin = "state:47+county:037")
+```
+## TODO
+* Select and pull in the relevant demographic data for each census tract in Davidson County
+* Join these data to each year's geospatial boundary file
