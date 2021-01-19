@@ -2,7 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(leaflet)
 library(sf)
-library(shinythemes)
+library(dashboardthemes)
 
 # Read in the HOLC map shapefile
 holc <- st_read("data/HOLC_BNA_shape_files/cartodb-query.shp")
@@ -18,3 +18,13 @@ tract_2010 <- st_transform(tract_2010, CRS("+proj=longlat +datum=WGS84 +no_defs"
 
 # Read in tornado dataframe
 tornadoes <- read_csv("data/tornadoes_for_mapping.csv")
+
+# Gentrification status selector
+
+# Average household income selector
+
+# Percent with a bachelor's degree selector
+
+# Percent non-Latinx white selector
+
+# Average rent selector
