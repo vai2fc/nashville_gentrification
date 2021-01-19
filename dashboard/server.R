@@ -1,9 +1,8 @@
 server <- function(input, output, session) {
     
-    # Create a map for the 2000 census data
+    # Create a map for gentrification
     output$map_2000 <- renderLeaflet({
         nash_map <- leaflet() %>%
-            leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
             setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5) %>% 
             addPolygons(data=tract_2000,
@@ -17,7 +16,6 @@ server <- function(input, output, session) {
     # Create a map for the 2010 census data
     output$map_2010 <- renderLeaflet({
         nash_map <- leaflet() %>%
-            leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
             setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5) %>% 
             addPolygons(data=tract_2010,
@@ -30,7 +28,6 @@ server <- function(input, output, session) {
     # Create a map for the HOLC data
     output$holc_map <- renderLeaflet({
         nash_map <- leaflet() %>%
-            leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
             setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5) %>% 
             addPolygons(data = holc,
@@ -46,7 +43,6 @@ server <- function(input, output, session) {
     # Create a map for tornadoes and floods
     output$tornado_map <- renderLeaflet({
         nash_map <- leaflet() %>%
-            leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
             setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5)
         
