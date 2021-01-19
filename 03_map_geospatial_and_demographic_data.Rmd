@@ -64,7 +64,7 @@ nash_census_map <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>%
   setView(lng=-86.7410562, lat=36.1682906, zoom = 11) %>% 
   addPolygons(data=tract_2000,
-              weight=2,
+              weight=4,
               col = 'red',
               popup = tract_2000$TRACTCE00) %>% 
     addPolygons(data=tract_2010,
@@ -74,6 +74,43 @@ nash_census_map <- leaflet() %>%
 nash_census_map
 
 # NB: In 2000, the census tract ID is CTIDFP00. In 2010, the census tract ID is GEOID. It is unclear why this had to change, nor why it takes a dive into the technical documentation to make it work.
+
+# Find the tractIDs that are only in one dataframe or the other
+# Try it spatially first
+test_sdf <- st_join(
+  tract_2000,
+  tract_2010,
+  join = st_contains,
+  suffix = c(".x", ".y"),
+  left = TRUE,
+  largest = FALSE
+)
+test_sdf_map <- leaflet() %>%
+  leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 11) %>% 
+  addPolygons(data=test_sdf,
+              weight=2,
+              col = 'red')
+
+test_sdf_map
+# Write out the spatial dfs to CSVs
+write_csv(tract_2000, "data/tract_2000.csv")
+write_csv(tract_2010, "data/tract_2010.csv")
+
+# Read them back in as non-spatial dfs
+tract_2000_df <- read_csv("data/tract_2000.csv")
+tract_2010_df <- read_csv("data/tract_2010.csv")
+
+# Using the dplyr::anti_join() function, only get the tracts that are in the 2000 and 2010 census
+unmatched_2000_tracts <- anti_join(tract_2000_df, tract_2010_df, by = c("TRACTCE00" = "TRACTCE10"))
+unmatched_2010_tracts <- anti_join(tract_2010_df, tract_2000_df, by = c("TRACTCE10" = "TRACTCE00"))
+
+# Write them out to CSVs
+write_csv(unmatched_2000_tracts, "data/unmatched_2000_tracts.csv")
+write_csv(unmatched_2010_tracts, "data/unmatched_2010_tracts.csv")
+
+
 # Based on the overlap, normalize to the 2000 census tracts by creating a new GEOID column for the 2010 data
 ```
 
@@ -152,5 +189,37 @@ holc_map <- leaflet() %>%
 
 # Take a look at the map
 holc_map
+```
+
+## Map it all together
+
+``` {r}
+nash_map <- leaflet() %>%
+  leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 11) %>% 
+  addPolygons(data=tract_2000,
+              weight=4,
+              col = 'red',
+              popup = tract_2000$TRACTCE00) %>% 
+    addPolygons(data=tract_2010,
+              weight=2,
+              col = 'blue',
+              popup = tract_2010$GEOID10) %>% 
+    addPolygons(data = holc,
+              fillColor = ~holc_pal(holc_grade),
+              #color = "#FF7F50", # you need to use hex colors
+              fillOpacity = 0.5, 
+              weight = 0, 
+              smoothFactor = 0.2,
+              popup = holc$holc_grade)
+
+for (i in 1:nrow(tornadoes)) 
+  nash_map <-
+  nash_map %>%
+  addPolylines(lat=c(tornadoes[i,]$slat,tornadoes[i,]$elat),
+               lng=c(tornadoes[i,]$slon,tornadoes[i,]$elon),
+               popup = tornadoes[i,]$date)
+nash_map
 ```
 

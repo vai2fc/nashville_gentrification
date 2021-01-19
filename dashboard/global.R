@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(leaflet)
 library(sf)
+library(shinythemes)
 
 # Read in the HOLC map shapefile
 holc <- st_read("data/HOLC_BNA_shape_files/cartodb-query.shp")
