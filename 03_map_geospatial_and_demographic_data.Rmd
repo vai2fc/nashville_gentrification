@@ -1,0 +1,156 @@
+---
+title: "Map Geospatial and Demographic Data"
+author: "Veronica Ikeshoji-Orlati"
+date: "1/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``` {r}
+# Import libraries
+library(tidyverse)
+library(leaflet)
+library(sf)
+library(raster)
+library(mapview)
+```
+
+## The 2000 and 2010 Census / ACS Tracts
+
+There might be a slight discrepancy between 2000 and 2010 census tracts. As a result, I have downloaded both shapefiles from [the US Census Bureau's Mapping Files service](https://www.census.gov/geographies/mapping-files.html) and import them here.
+```{r}
+# Import the tract shapefile for 2000 and 2010
+tract_2000 <- st_read("data/2000_census_tract_map/tl_2010_47037_tract00.shp")
+tract_2010 <- st_read("data/2010_census_tract_map/tl_2010_47037_tract10.shp")
+
+# Fix the CRS to bring it into alignment with the other geospatial datasets
+tract_2000 <- st_transform(tract_2000, CRS("+proj=longlat +datum=WGS84 +no_defs"))
+tract_2010 <- st_transform(tract_2010, CRS("+proj=longlat +datum=WGS84 +no_defs"))
+
+# Check the CRS for both
+crs(tract_2000)
+crs(tract_2010)
+
+# Map the 2000 census tracts for Davidson County
+nash_2000 <- leaflet() %>%
+  leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 11) %>% 
+  addPolygons(data=tract_2000,
+              weight=2,
+              col = 'red',
+              popup = tract_2000$TRACTCE00)
+
+nash_2000
+
+# Map the 2010 census tracts for Davidson County
+nash_2010 <- leaflet() %>%
+  leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 11) %>% 
+  addPolygons(data=tract_2010,
+              weight=2,
+              col = 'blue',
+              popup = tract_2010$GEOID10)
+
+nash_2010
+
+# Overlap the maps
+nash_census_map <- leaflet() %>%
+  leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 11) %>% 
+  addPolygons(data=tract_2000,
+              weight=2,
+              col = 'red',
+              popup = tract_2000$TRACTCE00) %>% 
+    addPolygons(data=tract_2010,
+              weight=2,
+              col = 'blue',
+              popup = tract_2010$GEOID10)
+nash_census_map
+
+# NB: In 2000, the census tract ID is CTIDFP00. In 2010, the census tract ID is GEOID. It is unclear why this had to change, nor why it takes a dive into the technical documentation to make it work.
+# Based on the overlap, normalize to the 2000 census tracts by creating a new GEOID column for the 2010 data
+```
+
+## The Tornado Dataset
+
+I downloaded the tornado dataset from the NOAA; here is the [documentation](https://www.spc.noaa.gov/wcm/data/SPC_severe_database_description.pdf) for the dataset, which I acquired [here](https://oasishub.co/dataset/usa-tornado-historical-tracks-noaa/resource/b2a11100-eac5-4d10-869a-87ba064ede2d?inner_span=True).
+```{r}
+# Read in the tornadoes dataset
+tornadoes <- read.csv("data/TN_tornadoes_1950-2018.csv")
+
+# Filter it down to only include tornadoes since 1998
+tornadoes <- tornadoes %>% 
+  filter(yr %in% (1998:2020))
+
+# Create a uid for each tornado
+tornadoes$uid <- paste(tornadoes$yr,tornadoes$om,sep = "_")  
+
+# Pare down the dataset to only the requisite variables
+tornadoes <- tornadoes %>% dplyr::select(uid, date, slat, slon, elat, elon, mag)
+
+# For tornadoes with no end lat/long, replace with start lat/long (these are the touchdowns that don't travel)
+tornadoes$elat[tornadoes$elat=="0"] <- tornadoes$slat[tornadoes$elat == "0"]
+tornadoes$elon[tornadoes$elon=="0"] <- tornadoes$slon[tornadoes$elon == "0"]
+
+# Create a new tornado label
+# TODO: tornadoes$popup <- paste(date, (mag), sep = ", magnitude ")
+
+# Write out the cleaned dataframe to a csv to import into the app
+write_csv(tornadoes, "data/tornadoes_for_mapping.csv")
+
+# Create a base map for the tornadoes dataset
+tornado_map <- leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>% 
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 11)
+
+# Check the map
+tornado_map
+
+# Write a for loop to create a new line for each tornado path
+for (i in 1:nrow(tornadoes)) 
+  tornado_map <-
+  tornado_map %>%
+  addPolylines(lat=c(tornadoes[i,]$slat,tornadoes[i,]$elat),
+               lng=c(tornadoes[i,]$slon,tornadoes[i,]$elon),
+               popup = tornadoes[i,]$date)
+```
+
+## Read in the HOLC Dataset and Map It
+
+The Home Owners' Loan Corporation was a government agency that, between 1935 and 1940, assigned 'mortgage security' grades to neighborhoods in metropolitan areas throughout the US. The [Mapping Inequality: Redlining in New Deal America](https://dsl.richmond.edu/panorama/redlining/#loc=5/39.1/-94.58) project at the University of Richmond has georectified these historic maps and made them available for download on the project website; their shapefiles for Nashville are utilized here.
+
+``` {r}
+# Read in the HOLC dataset
+holc <- st_read("data/HOLC_BNA_shape_files/cartodb-query.shp")
+
+# Transform it and make sure it's using the right projection
+holc <- st_transform(holc, CRS("+proj=longlat +datum=WGS84"))
+
+# Create a color-coding palette based on the HOLC data
+holc_pal <- colorFactor(
+  palette = c('#4ca64c', '#4d4dff', '#ffff7f', '#ff1a1a'),
+  domain = holc$holc_grade,
+  alpha = TRUE # This ensures that the transparency arguments are utilized in the addPolygons function
+)
+
+# Map it
+holc_map <- leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = holc,
+              fillColor = ~holc_pal(holc_grade),
+              #color = "#FF7F50", # you need to use hex colors
+              fillOpacity = 0.5, 
+              weight = 0, 
+              smoothFactor = 0.2,
+              popup = holc$holc_grade)
+
+# Take a look at the map
+holc_map
+```
+

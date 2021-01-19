@@ -23,41 +23,252 @@ apis <- listCensusApis()
 # Take a look at the available APIs
 View(apis)
 ```
-## Get the metadata for the 2000 and 2010 Decennial Census Datasets
+## Get the metadata for the 2000 Decennial Census Dataset
+
+I found a succinct description of the differences between the four summary files available for the 2000 census data on [an NCSU site](https://projects.ncsu.edu/woodlands//current_pdfs/teleconf_data_sources.pdf). To get the 2000 census data I need, I am using summary file 3 for all variables. Note that census "richer demographics" are only available down to the `block group` level; as a result, this is the smallest area I would be able to map and explore. I will be using ``census tract`` level data (the next step up) for this project.
 ```{r}
-# Create a new dataframe to store the metadata for the 2000 census
-census_2000_meta <- listCensusMetadata(
- name = 'dec/sf1',
+# Create a new dataframe to store the metadata for the 2000 census and break out the label field
+census_2000_meta_sf3 <- listCensusMetadata(
+ name = 'dec/sf3',
  vintage = '2000'
 )
 
+# Prepare to break out the label field by counting the number of times '!!' appears in it
+max(str_count(census_2000_meta_sf3$label, "!!"))
+
+census_2000_meta_sf3 <- census_2000_meta_sf3 %>% 
+  separate(
+     label,
+     c('label_01', 'label_02', 'label_03', 'label_04', 'label_05', 'label_06', 'label_07'),
+     sep = "!!",
+     remove = FALSE,
+     convert = FALSE
+     ) %>% 
+  arrange(concept, label_01, label_02, label_03, label_04, label_05, label_06, label_07)
+
+# Write the metadata file out to CSV
+# write_csv(census_2000_meta_sf3, 'data/census_2000_meta_sf3.csv')
+```
+
+## Get the metadata for the 2010 Decennial Census and ACS Datasets
+
+In my dive into census.gov data, I learned that the 2010 census did *not* collect "richer demographics." (I found [ProximityOne's explanation of ``block groups``](http://proximityone.com/blockgroups.htm) particularly helpful to understand what data were collected when and where.) To understand educational attainment, median household income, and housing costs at the census ``tract`` level, I also need to pull from the 2010 ACS 5-year dataset. I have leaned on  the Census Bureau's [list of comparable observations across 2010 ACS and Census 2000 and 2010 data](https://www.census.gov/programs-surveys/acs/guidance/comparing-acs-data/2010.html) to drive the best possible alignment across datasets.
+
+``` {r}
 # Create a new dataframe to store the metadata for the 2010 census
-census_2010_meta <- listCensusMetadata(
+census_2010_meta_sf1 <- listCensusMetadata(
  name = 'dec/sf1',
  vintage = '2010'
 )
 
-# Take a look at the metadata dataframes
-# View(census_2000_meta)
-# View(census_2010_meta)
+# Prepare to break out the label field by counting the number of times '!!' appears in it
+max(str_count(census_2010_meta_sf1$label, "!!"))
+
+census_2010_meta_sf1 <- census_2010_meta_sf1 %>%
+     separate(
+     label,
+     c('label_01', 'label_02', 'label_03', 'label_04', 'label_05', 'label_06'),
+     sep = "!!",
+     remove = FALSE,
+     convert = FALSE
+     ) %>% 
+  arrange(concept, label_01, label_02, label_03, label_04, label_05, label_06)
+
+# Create a new dataframe to store the acs 2010 data
+acs_2010_meta_detail <- listCensusMetadata(
+ name = 'acs/acs5',
+ vintage = '2010'
+)
+
+# Prepare to break out the label field by counting the number of times '!!' appears in it
+max(str_count(acs_2010_meta_detail$label, "!!"))
+
+acs_2010_meta_detail <- acs_2010_meta_detail %>%
+     separate(
+     label,
+     c('label_01', 'label_02', 'label_03', 'label_04', 'label_05', 'label_06', 'label_07', 'label_08'),
+     sep = "!!",
+     remove = FALSE,
+     convert = FALSE
+     ) %>% 
+  arrange(concept, label_01, label_02, label_03, label_04, label_05, label_06, label_07, label_08)
+
+# Write the datasets out to CSVs
+#write_csv(census_2000_meta, 'data/census_2010_meta_sf1.csv')
+#write_csv(census_2010_meta, 'data/acs_2010_meta_detail.csv')
 ```
 ## Check out the GEO_ID field needed to connect the demographic and geospatial data
-Note that census tracts shifted between 2000 and 2010 so there might have to be separate layers in the map for each year. There appears to be a partial overlap between 2000 and 2010 `GEO_ID`s for Davidson County which I need to investigate further.
+Note that census tracts shifted between 2000 and 2010 so there might have to be separate layers in the map for each year. There appears to be a partial overlap between 2000 and 2010 ``GEO_ID``s for Davidson County which I need to investigate further, though I think it'd be preferable to do this with the geospatial data.
+
+As far as I can tell, it is not possible to get ``block group`` data for an entire county with a simple API call. After some digging, I found that [somebody else](https://rstudio-pubs-static.s3.amazonaws.com/19337_2e7f827190514c569ea136db788ce850.html) had run into the same issue and discovered that looping through the ``tract``s in a county is the only way to get ``block group`` numbers. I discovered this before deciding to work with census ``tract``s instead of ``block group``s but am keeping the link here for future reference.
+
 ``` {r}
-# For the 2000 data
-tract_geoids_2000 <- getCensus(name = "dec/sf1",
+# Get the tract GEOIDs for Davidson County, TN for the 2000 census
+census_tract_geoids_2000_sf3 <- getCensus(name = "dec/sf3",
           vintage = "2000",
           vars = "GEO_ID",
           region = "tract:*",
           regionin = "state:47+county:037")
 
-# For the 2010 data
-tract_geoids_2010 <- getCensus(name = "dec/sf1",
+tract_list_2000_sf3 <- census_tract_geoids_2000_sf3$tract
+
+# Get the tract GEOIDs for Davidson County, TN for the 2010 census
+census_tract_geoids_2010_sf1 <- getCensus(name = "dec/sf1",
           vintage = "2010",
           vars = "GEO_ID",
           region = "tract:*",
           regionin = "state:47+county:037")
+
+tract_list_2010_sf1 <- census_tract_geoids_2010_sf1$tract
+
+# Get the tract GEOIDs for Davidson County, TN for the 2010 ACS 5-year
+acs_tract_geoids_2010 <- getCensus(name = "acs/acs5",
+          vintage = "2010",
+          vars = "GEO_ID",
+          region = "tract:*",
+          regionin = "state:47+county:037")
+
+tract_list_2010_acs <- acs_tract_geoids_2010$tract
+
+# Get the block groups and block geo_ids for Davidson county
+#census_2000_sf1_geo <- getCensus(name = "dec/sf1",
+#          vintage = "2000",
+#          vars = c('GEO_ID','BLKGRP'),
+#          region = "block:*",
+#          regionin = "state:47+county:037")
 ```
-## TODO
-* Select and pull in the relevant demographic data for each census tract in Davidson County
-* Join these data to each year's geospatial boundary file
+## Define Gentrification
+
+In looking for quantitative definitions of gentrification, I came across many options and realized that there is hardly any agreement on what actually constitutes gentrification. (The Enterprise Community Foundation's [Gentrification Tool](https://www.enterprisecommunity.org/policy-and-advocacy/policy-development-and-research/gentrification-comparison-tool) illustrates the differences in three common methods for defining gentrification quantitatively.)
+
+In lieu of coming up with yet another definition of gentrification for this project, I have opted to calculate the [Ellen and Ding (2016)](https://www.huduser.gov/portal/periodicals/cityscpe/vol18num3/guest.pdf) definition of gentrification, using Nashville's data. Areas which are susceptible to gentrification are those with a mean household income that is under the 40th percentile for the metropolitan area. Areas that have gentrified will show "large relative gains", that is "increases in the ratio of the census tract value to the metropolitan area average of more than 10 percentage points (for example, from 60 percent to 75 percent of the average metropolitan income)" in any of the four following statistics:
+1) average household income
+2) share of white residents
+3) share of college-educated residents
+4) median rent
+
+These four variables (in addition to monthly mortgage payments) will be the ones that will be mapped in the Nashville Forces of Gentrification project.
+
+# Define the Variables
+The pdf census data dictionaries helped me navigate / understand the dataframes; here are the links for [2000](https://www.census.gov/prod/cen2000/doc/ProfileTD.pdf) and [2010]().
+``` {r}
+# Geo Variables 2010:
+BLOCK # Census Block
+BLKGRP #Census Block Group
+TRACT #Census Tract
+GEO_ID #Need this code to map things
+
+# 2000 Decennial Census Data Field Names
+# Household Income Brackets - note that family != household, but that Ellen & Ding (2016) reference household income
+DP3047
+DP3048
+DP3049
+DP3050
+DP3051
+DP3052
+DP3053
+DP3054
+DP3055
+DP3056
+DP3057
+DP3058
+
+# Median Household Income
+DP3058
+
+# Family Income Brackets - again, family != household, but I'm pulling both because I am not clear on how divergent they actually are
+DP3069
+DP3070
+DP3071
+DP3072
+DP3073
+DP3074
+DP3075
+DP3076
+DP3077
+DP3078
+DP3079
+
+# Median Family Income
+DP3080
+
+# Race and Ethnicity - for most quantitative calculations of gentrification, the main number needed is the % of white, non-Latinx residents. This seems to be due, in part, to a striking lack of racial and ethnic granularity in pre-2000 census data and will enable this project to expand, based on available data, to earlier decades of Nashville's development.
+# I am intentionally focusing on big groups (i.e. not segmenting the Asian and Native Hawaiian and Other Pacific Islander groups) for the sake of expediency in using these data.
+V26
+V27
+V28
+V29
+V30
+V38
+V43
+V44
+V51
+V52
+V57
+V58
+
+# Educational attainment for individuals 25+
+DP2007
+DP2008
+DP2009
+DP2010
+DP2011
+DP2012
+DP2013
+DP2014
+DP2015
+DP2016
+
+# Monthly mortgage status and cost brackets
+DP4066
+DP4067
+DP4068
+DP4069
+DP4070
+DP4071
+DP4072
+DP4073
+
+# Median mortgage
+DP4074
+
+# Not mortgaged and median dollars (?)
+DP4075
+DP4076
+
+# Monthly rent brackets
+DP4085
+DP4086
+DP4087
+DP4088
+DP4089
+DP4090
+DP4091
+
+# No cash rent
+DP4092
+
+# Median rent
+DP4093
+
+# Demographic Variables 2010, by group:
+P13[letter?] #P013001 is median age, both sexes
+H10 # This is the total population in occupied housing units
+H11[letter?] # Total Population by Race / Ethnicity and Housing Status
+H3 # Number of occupied vs vacant units
+H9 # Race / Ethnicity of all
+P10 & P11 # Race / Ethnicity 18+
+
+# Relevant concepts 2010:
+'TOTAL RACES TALLIED FOR HOUSEHOLDERS'
+```
+## Get the Data
+
+The census API maxes out calls at 50 variables, so I have broken up the calls to avoid hitting that limit.
+``` {r}
+vars = c("GEO_ID", "DP4085")
+block_geoids_2000 <- getCensus(name = "dec/sf3",
+          vintage = "2000",
+          vars = vars,
+          region = "state:47")
+```
