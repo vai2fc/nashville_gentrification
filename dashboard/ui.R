@@ -5,26 +5,52 @@ shinyUI(dashboardPage(
     
     # Sidebar
     dashboardSidebar(
+        div(class = "sidebar", "2010 Stats"),
         # Create selector for gentrification status
-        # selectInput(
-        #     "gentrification_status",
-        #     h4("Show t:"),
-        #     choices = stat_choices,
-        #     selected = stat_choices[1]
-        # ),
-        # Create a selector input for the statistic
-        # selectInput(
-        #     "gentrification_status",
-        #     h4("Show t:"),
-        #     choices = stat_choices,
-        #     selected = stat_choices[1]
-        # )
+        selectInput(
+            "gentrification_status",
+            h4("How gentrified was an area in 2010?"),
+            choices = c("", "Gentrified", "Susceptible", "Not Gentrified", "Unknown"),
+            selected = ""
         ),
+        # Create slider for race/ethnicity
+        sliderInput(
+            "race_ethnicity",
+            h4("What percent of the population identify as people of color?"),
+            min = 0,
+            max = 100,
+            value = 30
+        ),
+        # Create slider for educational attainment
+        sliderInput(
+            "education",
+            h4("What percent of the population 25+ held a bachelor's degree?"),
+            min = 0,
+            max = 100,
+            value = 40
+        ),
+        # Create slider for income
+        sliderInput(
+            "income",
+            h4("What is the average household income?"),
+            min = 0,
+            max = 250000,
+            value = 45000
+        ),
+        # Create slider for rent
+        sliderInput(
+            "rent",
+            h4("What is the average rent?"),
+            min = 0,
+            max = 5000,
+            value = 1500
+        )
+    ),
     
     # Body
     dashboardBody(
         # Set the dashboard theme
-        shinyDashboardThemes(theme = "grey_light"),
+        shinyDashboardThemes(theme = "grey_dark"),
         
         # Create some tabs
         tabsetPanel(
