@@ -4,7 +4,7 @@ server <- function(input, output, session) {
     output$map_2000 <- renderLeaflet({
         nash_map <- leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
-            setView(lng=-87.0654323, lat=36.186314, zoom = 9.5) %>%
+            setView(lng=-86.8, lat=36.15, zoom = 9.5) %>%
             addPolygons(data=tract_2000,
                         weight=2,
                         col = 'red',
@@ -18,14 +18,14 @@ server <- function(input, output, session) {
     output$map_2010 <- renderLeaflet({
         nash_map <- leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
-            setView(lng=-87.0654323, lat=6.186314, zoom = 9.5) %>% 
+            setView(lng=-86.8, lat=36.15, zoom = 9.5) %>% 
             addPolygons(data = holc,
                         fillColor = ~holc_pal(holc_grade),
                         #color = "#FF7F50", # you need to use hex colors
                         fillOpacity = 0.5,
                         weight = 0,
                         smoothFactor = 0.2,
-                        popup = holc$holc_grade) %>% 
+                        popup = paste("HOLC Grade (A-D):", holc$holc_grade)) %>% 
             addPolygons(data=tract_2010,
                         weight=2,
                         col = 'blue',
@@ -38,14 +38,14 @@ server <- function(input, output, session) {
     output$holc_map <- renderLeaflet({
         nash_map <- leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
-            setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5) %>%
+            setView(lng=-86.8, lat=36.15, zoom = 9.5) %>%
             addPolygons(data = holc,
                         fillColor = ~holc_pal(holc_grade),
                         #color = "#FF7F50", # you need to use hex colors
                         fillOpacity = 0.5,
                         weight = 0,
                         smoothFactor = 0.2,
-                        popup = holc$holc_grade)
+                        popup = paste("HOLC Grade (A-D):", holc$holc_grade))
         nash_map
     })
     
@@ -53,7 +53,7 @@ server <- function(input, output, session) {
     output$tornado_map <- renderLeaflet({
         tornado_map <- leaflet() %>%
             addProviderTiles("CartoDB.Positron") %>%
-            setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5)
+            setView(lng=-86.8, lat=36.15, zoom = 9.5)
         
         for (i in 1:nrow(tornadoes)) {
             tornado_map <-
