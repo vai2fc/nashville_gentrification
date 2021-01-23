@@ -20,7 +20,7 @@ library(mapview)
 
 ## The 2000 and 2010 Census / ACS Tracts
 
-There might be a slight discrepancy between 2000 and 2010 census tracts. As a result, I have downloaded both shapefiles from [the US Census Bureau's Mapping Files service](https://www.census.gov/geographies/mapping-files.html) and import them here.
+There is a slight discrepancy between 2000 and 2010 census tracts. As a result, I have downloaded both shapefiles from [the US Census Bureau's Mapping Files service](https://www.census.gov/geographies/mapping-files.html) and import them here.
 ```{r}
 # Import the tract shapefile for 2000 and 2010
 tract_2000 <- st_read("data/2000_census_tract_map/tl_2010_47037_tract00.shp")
@@ -73,7 +73,7 @@ nash_census_map <- leaflet() %>%
               popup = tract_2010$GEOID10)
 nash_census_map
 
-# NB: In 2000, the census tract ID is CTIDFP00. In 2010, the census tract ID is GEOID. It is unclear why this had to change, nor why it takes a dive into the technical documentation to make it work.
+# NB: In 2000, the census tract ID is CTIDFP00. In 2010, the census tract ID is GEOID. It is unclear why this had to change, nor why it takes a dive into the technical documentation to determine that they are the same thing.
 
 # Find the tractIDs that are only in one dataframe or the other
 # Try it spatially first
@@ -102,7 +102,7 @@ write_csv(tract_2010, "data/tract_2010.csv")
 tract_2000_df <- read_csv("data/tract_2000.csv")
 tract_2010_df <- read_csv("data/tract_2010.csv")
 
-# Using the dplyr::anti_join() function, only get the tracts that are in the 2000 and 2010 census
+# Try again using the dplyr::anti_join() function, only get the tracts that are in the 2000 and 2010 census
 unmatched_2000_tracts <- anti_join(tract_2000_df, tract_2010_df, by = c("TRACTCE00" = "TRACTCE10"))
 unmatched_2010_tracts <- anti_join(tract_2010_df, tract_2000_df, by = c("TRACTCE10" = "TRACTCE00"))
 
@@ -121,9 +121,9 @@ I downloaded the tornado dataset from the NOAA; here is the [documentation](http
 # Read in the tornadoes dataset
 tornadoes <- read.csv("data/TN_tornadoes_1950-2018.csv")
 
-# Filter it down to only include tornadoes since 1998
+# Filter it down to only include tornadoes since 1990
 tornadoes <- tornadoes %>% 
-  filter(yr %in% (1998:2020))
+  filter(yr %in% (1990:2020))
 
 # Create a uid for each tornado
 tornadoes$uid <- paste(tornadoes$yr,tornadoes$om,sep = "_")  
@@ -144,18 +144,21 @@ write_csv(tornadoes, "data/tornadoes_for_mapping.csv")
 # Create a base map for the tornadoes dataset
 tornado_map <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>% 
-  setView(lng=-86.7410562, lat=36.1682906, zoom = 11)
+  setView(lng=-86.7410562, lat=36.1682906, zoom = 9.5)
 
 # Check the map
 tornado_map
 
 # Write a for loop to create a new line for each tornado path
-for (i in 1:nrow(tornadoes)) 
+for (i in 1:nrow(tornadoes)) {
   tornado_map <-
   tornado_map %>%
   addPolylines(lat=c(tornadoes[i,]$slat,tornadoes[i,]$elat),
                lng=c(tornadoes[i,]$slon,tornadoes[i,]$elon),
-               popup = tornadoes[i,]$date)
+               popup = paste("Date:", tornadoes[i,]$date, "<br>",
+                           "Magnitude:", tornadoes[i,]$mag))
+}
+tornado_map
 ```
 
 ## Read in the HOLC Dataset and Map It

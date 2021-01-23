@@ -10,6 +10,12 @@ library(shinythemes)
 holc <- st_read("data/HOLC_BNA_shape_files/cartodb-query.shp")
 holc <- st_transform(holc, CRS("+proj=longlat +datum=WGS84"))
 
+# Create the colorscheme map for the HOLC map
+holc_pal <- colorFactor(
+  palette = c('#4ca64c', '#4d4dff', '#ffff7f', '#ff1a1a'),
+  domain = holc$holc_grade
+)
+
 # Read in the 2000 census tract shapefile
 tract_2000 <- st_read("data/2000_census_tract_map/tl_2010_47037_tract00.shp")
 tract_2000 <- st_transform(tract_2000, CRS("+proj=longlat +datum=WGS84 +no_defs"))
@@ -18,15 +24,19 @@ tract_2000 <- st_transform(tract_2000, CRS("+proj=longlat +datum=WGS84 +no_defs"
 tract_2010 <- st_read("data/2010_census_tract_map/tl_2010_47037_tract10.shp")
 tract_2010 <- st_transform(tract_2010, CRS("+proj=longlat +datum=WGS84 +no_defs"))
 
-# Read in tornado dataframe
+# Read in the 1990-2010 tornado dataframe
 tornadoes <- read_csv("data/tornadoes_for_mapping.csv")
 
 # Gentrification status selector
 
-# Average household income selector
+# Household income
+tract_income_2000
 
-# Percent with a bachelor's degree selector
+# Educational Attainment
+tract_education_2000
+  
+# Race / Ethnicity
+tract_race_2000
 
-# Percent non-Latinx white selector
-
-# Average rent selector
+# Rent
+tract_rent_2000
