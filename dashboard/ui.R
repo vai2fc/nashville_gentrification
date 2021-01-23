@@ -4,7 +4,7 @@ shinyUI(fluidPage(theme = shinytheme("sandstone"),
 
     # Application title
 
-    tabPanel("About",
+    tabPanel("Introduction",
         mainPanel(
             fluidRow(
             column(12,
@@ -13,129 +13,41 @@ shinyUI(fluidPage(theme = shinytheme("sandstone"),
         )
     ),
     
-    tabPanel("Maps",
+    tabPanel("Visualizing Gentrification",
 
     # Sidebar
     sidebarLayout(
         sidebarPanel(
-        # Create selector for gentrification status
-        # selectInput(
-        #     "metric",
-        #     h4("Select the measures to compare:"),
-        #     choices = c("",
-        #                 "Gentrification",
-        #                 "Race / Ethnicity",
-        #                 "Educational Attainment",
-        #                 "Household Income",
-        #                 "Housing Costs",
-        #                 "HOLC Grade",
-        #                 "Tornado Damage (within 10 years)",
-        #                 "2010 Flood Damage"),
-        #     selected = ""
-        # ),
-        # Create checkbox for race
-        selectInput(
-            "demographic",
-            h4("View Demographic"),
-            choices = c("Race/Ethnicity" = "race",
-                        "Monthly Rent" = "rent",
-                        "Yearly Income" = "income",
-                        "Educational Achievement" = "education"),
-            multiple = FALSE
-        ),
-        checkboxInput('gent_score', 'Gentrification Score', TRUE),
-        checkboxInput('holc', 'Historic Redlining', FALSE),
-        checkboxInput('tornado', 'Tornado Tracks', FALSE),
-        # # Create checkbox for ethnicity
-        # checkboxGroupInput(
-        #     "ethnicity",
-        #     h4("Select Hispanic / Latinx ethnicity:"),
-        #     choices = c("Hispanic / Latinx",
-        #                 "Not Hispanic / Latinx")
-        # ),
-        # # Create checkbox for educational attainment
-        # checkboxGroupInput(
-        #     "education",
-        #     h4("Select educational attainment for residents 25+:"),
-        #     choices = c("No HS",
-        #                 "HS degree or equivalent",
-        #                 "Some college",
-        #                 "Associate's degree",
-        #                 "Bachelor's degree",
-        #                 "Some graduate school",
-        #                 "Master's degree",
-        #                 "Professional degree",
-        #                 "Doctorate")
-        # ),
-        # # Create checkbox for income
-        # checkboxGroupInput(
-        #     "income",
-        #     h4("Select annual household income brackets:"),
-        #     choices = c("< $10,000",
-        #                 "$10,000 - $19,999",
-        #                 "$20,000 - $29,999",
-        #                 "$30,000 - $39,999",
-        #                 "$40,000 - $49,999",
-        #                 "$50,000 - $59,999",
-        #                 "$60,000 - $69,999",
-        #                 "$70,000 - $79,999",
-        #                 "$80,000 - $89,999",
-        #                 "$90,000 - $99,999",
-        #                 "$100,000 - $109,999",
-        #                 "$110,000 - $119,999",
-        #                 "$120,000 - $129,999",
-        #                 "$130,000 - $139,999",
-        #                 "$140,000 - $149,999",
-        #                 "$150,000 - $159,999",
-        #                 "$160,000 - $169,999",
-        #                 "$170,000 - $179,999",
-        #                 "$180,000 - $189,999",
-        #                 "$190,000 - $199,999",
-        #                 ">= $200,000")
-        # ),
-        # # Create checkbox for rent bracjet
-        # checkboxGroupInput(
-        #     "rent",
-        #     h4("Select monthly housing costs:"),
-        #     choices = c("< $100",
-        #                 "$100 - $199",
-        #                 "$200 - $299",
-        #                 "$300 - $399",
-        #                 "$400 - $499",
-        #                 "$500 - $599",
-        #                 "$600 - $699",
-        #                 "$700 - $799",
-        #                 "$800 - $899",
-        #                 "$900 - $999",
-        #                 "$1,000 - $1,099",
-        #                 "$1,100 - $1,199",
-        #                 "$1,200 - $1,299",
-        #                 "$1,300 - $1,399",
-        #                 "$1,400 - $1,499",
-        #                 "$1,500 - $1,599",
-        #                 "$1,600 - $1,699",
-        #                 "$1,700 - $1,799",
-        #                 "$1,800 - $1,899",
-        #                 "$1,900 - $1,999",
-        #                 ">= $2,000")
-        # ),
-        # # Create a checkbox for HOLC grade
-        # checkboxGroupInput(
-        #     "holc",
-        #     h4("Select HOLC Grade:"),
-        #     choices = c("A",
-        #                 "B",
-        #                 "C",
-        #                 "D",
-        #                 "Not graded")
-        # ),
-        # # Create a checkbox for natural disaster damage
-        # checkboxGroupInput(
-        #     "disaster",
-        #     h4("Select natural disaster in past 10 years:"),
-        #     choices = c("Tornado",
-        #                 "Flood")
-        # )S
+            h4('Select map layer(s):'),
+            checkboxInput('gent_score', 'Gentrification Score', TRUE),
+            h5('The Gentrification Score layer draws on US Census Bureau data to visualize demographic changes and susceptibility to gentrification between 2000 and 2010. The methodology is outlined on the Context & Caveats tab.'),
+            h6('Scores are as follows:
+               0 (pale yellow): "Not susceptible to gentrification",
+               1: "susceptible to gentrification", and
+               2-5 (orange to red): "1+ factors of gentrification identified"'),
+            checkboxInput('holc', 'HOLC Neighborhoods', FALSE),
+            h5('The HOLC Neighborhoods layer draws on the georectified 1935-1940 HOLC neighborhood risk maps from the University of Richmond Mapping Inequality Project to visualize how communities have historically had access to financial resources.'),
+            h6('Historical HOLC grades are as follows:
+               A (green): "Best",
+               B (blue): "Still Desirable",
+               C (yellow): "Definitely Declining",
+               D (red): "Hazardous"'),
+            checkboxInput('tornado', 'Tornado Tracks', FALSE),
+            h5('The Tornado Tracks layer utilizes NOAA data to map where tornadoes of different magnitudes have struck the middle TN region between 1990 and 2018.'),
+            h6('The popups on each tornado specify the date they occurred, as well as the Enhanced Fujita scale magnitude (a measure of tornado severity and impact ranging from 0 (low) to 5 (high).'),
+            # Create checkbox for demographics
+            selectInput(
+                "demographic",
+                h4("Select demographic statistic to visualize:"),
+                choices = c("Race/Ethnicity" = "race",
+                            "Monthly Rent" = "rent",
+                            "Yearly Income" = "income",
+                            "Educational Attainment" = "education"),
+                multiple = FALSE
+            ),
+            h5('The demographic statistics above are derived from the 2000 Decennial Census and 2010 ACS 5-year Estimate datasets. See the Credits & Contact tab for additional data source information.')
+
+
         )
     ,
     
@@ -173,7 +85,16 @@ shinyUI(fluidPage(theme = shinytheme("sandstone"),
         
     )
     ),
-    tabPanel("Credits",
+    tabPanel("Context & Caveats",
+             mainPanel(
+                 fluidRow(
+                     column(12,
+                            includeMarkdown("pages/methods.md")
+                     ))
+             )
+    ),
+    
+    tabPanel("Credits & Contact",
              mainPanel(
                  fluidRow(
                      column(12,
