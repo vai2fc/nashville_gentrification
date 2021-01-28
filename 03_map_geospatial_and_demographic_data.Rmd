@@ -1,5 +1,5 @@
 ---
-title: "Map Geospatial and Demographic Data"
+title: "03 - Map Geospatial and Demographic Data"
 author: "Veronica Ikeshoji-Orlati"
 date: "1/14/2021"
 output: html_document
@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+# Setup
 ``` {r}
 # Import libraries
 library(tidyverse)
@@ -16,10 +16,12 @@ library(leaflet)
 library(sf)
 library(raster)
 library(mapview)
+library(readxl)
+library(stringi)
+library(scales)
 ```
 
-## The 2000 and 2010 Census / ACS Tracts
-
+## Read in the 2000 and 2010 Census / ACS Tracts
 There is a slight discrepancy between 2000 and 2010 census tracts. As a result, I have downloaded both shapefiles from [the US Census Bureau's Mapping Files service](https://www.census.gov/geographies/mapping-files.html) and import them here.
 ```{r}
 # Import the tract shapefile for 2000 and 2010
@@ -33,7 +35,23 @@ tract_2010 <- st_transform(tract_2010, CRS("+proj=longlat +datum=WGS84 +no_defs"
 # Check the CRS for both
 crs(tract_2000)
 crs(tract_2010)
+```
+## Add gentrification scores to geospatial datasets for mapping
+```{r}
+# Read in demographic CSVs
+census_2000_raw_assembled <- read_csv('data/census_2000_raw_assembled.csv')
+census_2010_raw_assembled <- read_csv('data/census_2010_raw_assembled.csv')
 
+# Join the demographics to the tract dataframes
+tract_2000 <- left_join(tract_2000, census_2000_raw_assembled[,c('tract','Susceptible','Gentrification_Status')], by = c('TRACTCE00' = 'tract'))
+tract_2010 <- left_join(tract_2010, census_2010_raw_assembled[,c('tract','Susceptible','Gentrification_Status')], by = c('TRACTCE10' = 'tract'))
+
+# Write out the dfs with demographics to CSVs for the app
+write_csv(tract_2000, "data/tract_2000.csv")
+write_csv(tract_2010, "data/tract_2010.csv")
+```
+## Test out some maps
+``` {r}
 # Map the 2000 census tracts for Davidson County
 nash_2000 <- leaflet() %>%
   leaflet() %>%
@@ -74,7 +92,10 @@ nash_census_map <- leaflet() %>%
 nash_census_map
 
 # NB: In 2000, the census tract ID is CTIDFP00. In 2010, the census tract ID is GEOID. It is unclear why this had to change, nor why it takes a dive into the technical documentation to determine that they are the same thing.
-
+```
+## Identify the tract IDs that don't overlap
+For the app, I decided to do side-by-side maps, so the code below is only for reference but was not used in the app.
+``` {r}
 # Find the tractIDs that are only in one dataframe or the other
 # Try it spatially first
 test_sdf <- st_join(
@@ -94,11 +115,8 @@ test_sdf_map <- leaflet() %>%
               col = 'red')
 
 test_sdf_map
-# Write out the spatial dfs to CSVs
-write_csv(tract_2000, "data/tract_2000.csv")
-write_csv(tract_2010, "data/tract_2010.csv")
 
-# Read them back in as non-spatial dfs
+# Read the tracts back in as non-spatial dataframes
 tract_2000_df <- read_csv("data/tract_2000.csv")
 tract_2010_df <- read_csv("data/tract_2010.csv")
 
@@ -106,14 +124,10 @@ tract_2010_df <- read_csv("data/tract_2010.csv")
 unmatched_2000_tracts <- anti_join(tract_2000_df, tract_2010_df, by = c("TRACTCE00" = "TRACTCE10"))
 unmatched_2010_tracts <- anti_join(tract_2010_df, tract_2000_df, by = c("TRACTCE10" = "TRACTCE00"))
 
-# Write them out to CSVs
+# Write them out to CSVs to explore
 write_csv(unmatched_2000_tracts, "data/unmatched_2000_tracts.csv")
 write_csv(unmatched_2010_tracts, "data/unmatched_2010_tracts.csv")
-
-
-# Based on the overlap, normalize to the 2000 census tracts by creating a new GEOID column for the 2010 data
 ```
-
 ## The Tornado Dataset
 
 I downloaded the tornado dataset from the NOAA; here is the [documentation](https://www.spc.noaa.gov/wcm/data/SPC_severe_database_description.pdf) for the dataset, which I acquired [here](https://oasishub.co/dataset/usa-tornado-historical-tracks-noaa/resource/b2a11100-eac5-4d10-869a-87ba064ede2d?inner_span=True).

@@ -1,0 +1,928 @@
+---
+title: "02 Data Cleanup"
+author: "Veronica Ikeshoji-Orlati"
+date: "1/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read in data
+``` {r}
+# Load libraries
+library(tidyverse)
+library(readxl)
+library(stringi)
+library(scales)
+
+# Read in CSVs
+census_2000_raw_assembled <- read_csv('data/census_2000_raw_assembled.csv')
+census_2010_raw_assembled <- read_csv('data/census_2010_raw_assembled.csv')
+```
+## Aggregate age brackets and clean up the data
+```{r}
+# Group 2000 census youth data
+census_2000_raw_assembled$"Age: Male - Under 18 years" <- census_2000_raw_assembled$"Age: Male - Under 1 year" +
+  census_2000_raw_assembled$"Age: Male - 1 year" +
+  census_2000_raw_assembled$"Age: Male - 2 years" +
+  census_2000_raw_assembled$"Age: Male - 3 years" +
+  census_2000_raw_assembled$"Age: Male - 4 years" +
+  census_2000_raw_assembled$"Age: Male - 5 years" +
+  census_2000_raw_assembled$"Age: Male - 6 years" +
+  census_2000_raw_assembled$"Age: Male - 7 years" +
+  census_2000_raw_assembled$"Age: Male - 8 years" +
+  census_2000_raw_assembled$"Age: Male - 9 years" +
+  census_2000_raw_assembled$"Age: Male - 10 years" +
+  census_2000_raw_assembled$"Age: Male - 11 years" +
+  census_2000_raw_assembled$"Age: Male - 12 years" +
+  census_2000_raw_assembled$"Age: Male - 13 years" +
+  census_2000_raw_assembled$"Age: Male - 14 years" +
+  census_2000_raw_assembled$"Age: Male - 15 years" +
+  census_2000_raw_assembled$"Age: Male - 16 years" +
+  census_2000_raw_assembled$"Age: Male - 17 years"
+
+census_2000_raw_assembled$"Age: Male - 18 and 19 years" <- census_2000_raw_assembled$"Age: Male - 18 years" +
+  census_2000_raw_assembled$"Age: Male - 19 years"
+
+census_2000_raw_assembled$"Age: Female - 18 and 19 years" <- census_2000_raw_assembled$"Age: Female - 18 years" +
+  census_2000_raw_assembled$"Age: Female - 19 years"
+
+census_2000_raw_assembled$"Age: Female - Under 18 years" <- census_2000_raw_assembled$"Age: Female - Under 1 year"+
+  census_2000_raw_assembled$"Age: Female - 1 year"+
+  census_2000_raw_assembled$"Age: Female - 2 years"+
+  census_2000_raw_assembled$"Age: Female - 3 years"+
+  census_2000_raw_assembled$"Age: Female - 4 years"+
+  census_2000_raw_assembled$"Age: Female - 5 years"+
+  census_2000_raw_assembled$"Age: Female - 6 years"+
+  census_2000_raw_assembled$"Age: Female - 7 years"+
+  census_2000_raw_assembled$"Age: Female - 8 years"+
+  census_2000_raw_assembled$"Age: Female - 9 years"+
+  census_2000_raw_assembled$"Age: Female - 10 years"+
+  census_2000_raw_assembled$"Age: Female - 11 years"+
+  census_2000_raw_assembled$"Age: Female - 12 years"+
+  census_2000_raw_assembled$"Age: Female - 13 years"+
+  census_2000_raw_assembled$"Age: Female - 14 years"+
+  census_2000_raw_assembled$"Age: Female - 15 years"+
+  census_2000_raw_assembled$"Age: Female - 16 years"+
+  census_2000_raw_assembled$"Age: Female - 17 years"
+
+# Drop the individual youth age groups
+census_2000_raw_assembled <- census_2000_raw_assembled[,-which(names(census_2000_raw_assembled) %in% c("Age: Male - Under 1 year",
+                                                                          "Age: Male - 1 year",
+                                                                          "Age: Male - 2 years",
+                                                                          "Age: Male - 3 years",
+                                                                          "Age: Male - 4 years",
+                                                                          "Age: Male - 5 years",
+                                                                          "Age: Male - 6 years",
+                                                                          "Age: Male - 7 years",
+                                                                          "Age: Male - 8 years",
+                                                                          "Age: Male - 9 years",
+                                                                          "Age: Male - 10 years",
+                                                                          "Age: Male - 11 years",
+                                                                          "Age: Male - 12 years",
+                                                                          "Age: Male - 13 years",
+                                                                          "Age: Male - 14 years",
+                                                                          "Age: Male - 15 years",
+                                                                          "Age: Male - 16 years",
+                                                                          "Age: Male - 17 years",
+                                                                          "Age: Male - 18 years",
+                                                                          "Age: Male - 19 years",
+                                                                          "Age: Female - Under 1 year",
+                                                                          "Age: Female - 1 year",
+                                                                          "Age: Female - 2 years",
+                                                                          "Age: Female - 3 years",
+                                                                          "Age: Female - 4 years",
+                                                                          "Age: Female - 5 years",
+                                                                          "Age: Female - 6 years",
+                                                                          "Age: Female - 7 years",
+                                                                          "Age: Female - 8 years",
+                                                                          "Age: Female - 9 years",
+                                                                          "Age: Female - 10 years",
+                                                                          "Age: Female - 11 years",
+                                                                          "Age: Female - 12 years",
+                                                                          "Age: Female - 13 years",
+                                                                          "Age: Female - 14 years",
+                                                                          "Age: Female - 15 years",
+                                                                          "Age: Female - 16 years",
+                                                                          "Age: Female - 17 years",
+                                                                          "Age: Female - 18 years",
+                                                                          "Age: Female - 19 years"))]
+
+# Group 2010 youth census data
+census_2010_raw_assembled$"Age: Male - Under 18 years" <-census_2010_raw_assembled$"Age: Male - Under 5 years" +
+  census_2010_raw_assembled$"Age: Male - 5 to 9 years" +
+  census_2010_raw_assembled$"Age: Male - 10 to 14 years" +
+  census_2010_raw_assembled$"Age: Male - 15 to 17 years"
+
+census_2010_raw_assembled$"Age: Female - Under 18 years" <- census_2010_raw_assembled$"Age: Female - Under 5 years" +
+  census_2010_raw_assembled$"Age: Female - 5 to 9 years" + 
+  census_2010_raw_assembled$"Age: Female - 10 to 14 years" +
+  census_2010_raw_assembled$"Age: Female - 15 to 17 years"
+
+# Drop the individual youth age groups
+census_2010_raw_assembled <- census_2010_raw_assembled[,-which(names(census_2010_raw_assembled) %in% c("Age: Male - Under 5 years",
+  "Age: Male - 5 to 9 years",
+  "Age: Male - 10 to 14 years",
+  "Age: Male - 15 to 17 years",
+  "Age: Female - Under 5 years",
+  "Age: Female - 5 to 9 years",
+  "Age: Female - 10 to 14 years",
+  "Age: Female - 15 to 17 years",
+  'Race: Two or More Inc Other (Non-Hispanic)',
+  'Race: Three or More (Non-Hispanic)',
+  'Race: Two or More Inc Other (Hispanic)',
+  'Race: Three or More (Hispanic)'))]
+```
+
+## Reordering columns
+``` {r}
+# Reorder things in the 2010 csv so that it's the same as the 2000 csv
+census_2010_raw_assembled <- census_2010_raw_assembled[,c(1,
+                                                          2,
+                                                          3,
+                                                          4,
+                                                          5,
+                                                          6,
+                                                          7,
+                                                          8,
+                                                          9,
+                                                          10,
+                                                          11,
+                                                          12,
+                                                          13,
+                                                          14,
+                                                          15,
+                                                          16,
+                                                          17,
+                                                          18,
+                                                          19,
+                                                          20,
+                                                          21,
+                                                          22,
+                                                          23,
+                                                          25,
+                                                          26,
+                                                          27,
+                                                          28,
+                                                          29,
+                                                          30,
+                                                          31,
+                                                          32,
+                                                          33,
+                                                          34,
+                                                          35,
+                                                          36,
+                                                          37,
+                                                          38,
+                                                          39,
+                                                          40,
+                                                          41,
+                                                          42,
+                                                          43,
+                                                          45,
+                                                          46,
+                                                          47,
+                                                          48,
+                                                          49,
+                                                          50,
+                                                          51,
+                                                          52,
+                                                          53,
+                                                          54,
+                                                          55,
+                                                          56,
+                                                          57,
+                                                          58,
+                                                          59,
+                                                          60,
+                                                          61,
+                                                          62,
+                                                          80,
+                                                          81,
+                                                          82,
+                                                          83,
+                                                          84,
+                                                          85,
+                                                          86,
+                                                          87,
+                                                          88,
+                                                          89,
+                                                          90,
+                                                          91,
+                                                          92,
+                                                          93,
+                                                          94,
+                                                          95,
+                                                          96,
+                                                          97,
+                                                          98,
+                                                          99,
+                                                          100,
+                                                          101,
+                                                          102,
+                                                          103,
+                                                          104,
+                                                          105,
+                                                          106,
+                                                          107,
+                                                          108,
+                                                          109,
+                                                          110,
+                                                          111,
+                                                          112,
+                                                          113,
+                                                          114,
+                                                          115,
+                                                          116,
+                                                          117,
+                                                          118,
+                                                          119,
+                                                          120,
+                                                          121,
+                                                          122,
+                                                          123,
+                                                          124,
+                                                          125,
+                                                          126,
+                                                          127,
+                                                          128,
+                                                          129,
+                                                          130,
+                                                          131,
+                                                          132,
+                                                          133,
+                                                          134,
+                                                          135,
+                                                          136,
+                                                          137,
+                                                          138,
+                                                          139,
+                                                          140,
+                                                          141,
+                                                          142,
+                                                          143,
+                                                          144,
+                                                          145,
+                                                          146,
+                                                          147,
+                                                          148,
+                                                          149,
+                                                          150,
+                                                          151,
+                                                          152,
+                                                          153,
+                                                          154,
+                                                          155,
+                                                          156,
+                                                          157,
+                                                          63,
+                                                          64,
+                                                          65,
+                                                          66,
+                                                          67,
+                                                          68,
+                                                          69,
+                                                          70,
+                                                          71,
+                                                          72,
+                                                          73,
+                                                          74,
+                                                          75,
+                                                          76,
+                                                          77,
+                                                          78,
+                                                          79,
+                                                          158,
+                                                          159,
+                                                          160,
+                                                          161,
+                                                          162,
+                                                          24,
+                                                          44,
+                                                          163)]
+```
+
+## Calculate Race Percentages
+``` {r}
+# Calculate Race 2000 percentages
+{
+census_2000_raw_assembled$"PCT Race: Total (Non-Hispanic)" <- census_2000_raw_assembled[,6]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: White (Non-Hispanic)" <- census_2000_raw_assembled[,7]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Black or African American (Non-Hispanic)" <- census_2000_raw_assembled[,8]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: American Indian and Alaska Native (Non-Hispanic)" <- census_2000_raw_assembled[,9]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Asian (Non-Hispanic)" <- census_2000_raw_assembled[,10]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)" <- census_2000_raw_assembled[,11]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Other (Non-Hispanic)" <- census_2000_raw_assembled[,12]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Race: Two or More (Non-Hispanic)" <- census_2000_raw_assembled[,13]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Race: Total (Hispanic)" <- census_2000_raw_assembled[,14]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: White (Hispanic)" <- census_2000_raw_assembled[,15]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Black or African American (Hispanic)" <- census_2000_raw_assembled[,16]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: American Indian and Alaska Native (Hispanic)" <- census_2000_raw_assembled[,17]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Asian (Hispanic)" <- census_2000_raw_assembled[,18]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Native Hawaiian and Other Pacific Islander  (Hispanic)" <- census_2000_raw_assembled[,19]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Other (Hispanic)" <- census_2000_raw_assembled[,20]/census_2000_raw_assembled[,5]
+census_2000_raw_assembled$"PCT Race: Race: Two or More (Hispanic)" <- census_2000_raw_assembled[,21]/census_2000_raw_assembled[,5]
+}
+
+# Calculate Race 2010 percentages
+{
+  census_2010_raw_assembled$"PCT Race: Total (Non-Hispanic)" <- census_2010_raw_assembled[,6]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: White (Non-Hispanic)" <- census_2010_raw_assembled[,7]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Black or African American (Non-Hispanic)" <- census_2010_raw_assembled[,8]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: American Indian and Alaska Native (Non-Hispanic)" <- census_2010_raw_assembled[,9]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Asian (Non-Hispanic)" <- census_2010_raw_assembled[,10]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)" <- census_2010_raw_assembled[,11]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Other (Non-Hispanic)" <- census_2010_raw_assembled[,12]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Race: Two or More (Non-Hispanic)" <- census_2010_raw_assembled[,13]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Race: Total (Hispanic)" <- census_2010_raw_assembled[,14]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: White (Hispanic)" <- census_2010_raw_assembled[,15]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Black or African American (Hispanic)" <- census_2010_raw_assembled[,16]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: American Indian and Alaska Native (Hispanic)" <- census_2010_raw_assembled[,17]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Asian (Hispanic)" <- census_2010_raw_assembled[,18]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Native Hawaiian and Other Pacific Islander  (Hispanic)" <- census_2010_raw_assembled[,19]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Other (Hispanic)" <- census_2010_raw_assembled[,20]/census_2010_raw_assembled[,5]
+  census_2010_raw_assembled$"PCT Race: Race: Two or More (Hispanic)" <- census_2010_raw_assembled[,21]/census_2010_raw_assembled[,5]
+}
+```
+
+## Format age data
+``` {r}
+# Merge genders per age bracket for 2000
+{
+  census_2000_raw_assembled$'Age: Total - 20 years' = census_2000_raw_assembled$'Age: Male - 20 years' + census_2000_raw_assembled$'Age: Female - 20 years'
+  census_2000_raw_assembled$'Age: Total - 21 years' = census_2000_raw_assembled$'Age: Male - 21 years' + census_2000_raw_assembled$'Age: Female - 21 years'
+  census_2000_raw_assembled$'Age: Total - 22 to 24 years' = census_2000_raw_assembled$'Age: Male - 22 to 24 years' + census_2000_raw_assembled$'Age: Female - 22 to 24 years'
+  census_2000_raw_assembled$'Age: Total - 25 to 29 years' = census_2000_raw_assembled$'Age: Male - 25 to 29 years' + census_2000_raw_assembled$'Age: Female - 25 to 29 years'
+  census_2000_raw_assembled$'Age: Total - 30 to 34 years' = census_2000_raw_assembled$'Age: Male - 30 to 34 years' + census_2000_raw_assembled$'Age: Female - 30 to 34 years'
+  census_2000_raw_assembled$'Age: Total - 35 to 39 years' = census_2000_raw_assembled$'Age: Male - 35 to 39 years' + census_2000_raw_assembled$'Age: Female - 35 to 39 years'
+  census_2000_raw_assembled$'Age: Total - 40 to 44 years' = census_2000_raw_assembled$'Age: Male - 40 to 44 years' + census_2000_raw_assembled$'Age: Female - 40 to 44 years'
+  census_2000_raw_assembled$'Age: Total - 45 to 49 years' = census_2000_raw_assembled$'Age: Male - 45 to 49 years' + census_2000_raw_assembled$'Age: Female - 45 to 49 years'
+  census_2000_raw_assembled$'Age: Total - 50 to 54 years' = census_2000_raw_assembled$'Age: Male - 50 to 54 years' + census_2000_raw_assembled$'Age: Female - 50 to 54 years'
+  census_2000_raw_assembled$'Age: Total - 55 to 59 years' = census_2000_raw_assembled$'Age: Male - 55 to 59 years' + census_2000_raw_assembled$'Age: Female - 55 to 59 years'
+  census_2000_raw_assembled$'Age: Total - 60 and 61 years' = census_2000_raw_assembled$'Age: Male - 60 and 61 years' + census_2000_raw_assembled$'Age: Female - 60 and 61 years'
+  census_2000_raw_assembled$'Age: Total - 62 to 64 years' = census_2000_raw_assembled$'Age: Male - 62 to 64 years' + census_2000_raw_assembled$'Age: Female - 62 to 64 years'
+  census_2000_raw_assembled$'Age: Total - 65 and 66 years' = census_2000_raw_assembled$'Age: Male - 65 and 66 years' + census_2000_raw_assembled$'Age: Female - 65 and 66 years'
+  census_2000_raw_assembled$'Age: Total - 67 to 69 years' = census_2000_raw_assembled$'Age: Male - 67 to 69 years' + census_2000_raw_assembled$'Age: Female - 67 to 69 years'
+  census_2000_raw_assembled$'Age: Total - 70 to 74 years' = census_2000_raw_assembled$'Age: Male - 70 to 74 years' + census_2000_raw_assembled$'Age: Female - 70 to 74 years'
+  census_2000_raw_assembled$'Age: Total - 75 to 79 years' = census_2000_raw_assembled$'Age: Male - 75 to 79 years' + census_2000_raw_assembled$'Age: Female - 75 to 79 years'
+  census_2000_raw_assembled$'Age: Total - 80 to 84 years' = census_2000_raw_assembled$'Age: Male - 80 to 84 years' + census_2000_raw_assembled$'Age: Female - 80 to 84 years'
+  census_2000_raw_assembled$'Age: Total - 85 years and over' = census_2000_raw_assembled$'Age: Male - 85 years and over' + census_2000_raw_assembled$'Age: Female - 85 years and over'
+  census_2000_raw_assembled$'Age: Total - Under 18 years' = census_2000_raw_assembled$'Age: Male - Under 18 years' + census_2000_raw_assembled$'Age: Female - Under 18 years'
+  census_2000_raw_assembled$'Age: Total - 18 and 19 years' = census_2000_raw_assembled$'Age: Male - 18 and 19 years' + census_2000_raw_assembled$'Age: Female - 18 and 19 years'
+}
+
+# Merge genders into age brackets for 2010
+{
+  census_2010_raw_assembled$'Age: Total - 20 years' = census_2010_raw_assembled$'Age: Male - 20 years' + census_2010_raw_assembled$'Age: Female - 20 years'
+  census_2010_raw_assembled$'Age: Total - 21 years' = census_2010_raw_assembled$'Age: Male - 21 years' + census_2010_raw_assembled$'Age: Female - 21 years'
+  census_2010_raw_assembled$'Age: Total - 22 to 24 years' = census_2010_raw_assembled$'Age: Male - 22 to 24 years' + census_2010_raw_assembled$'Age: Female - 22 to 24 years'
+  census_2010_raw_assembled$'Age: Total - 25 to 29 years' = census_2010_raw_assembled$'Age: Male - 25 to 29 years' + census_2010_raw_assembled$'Age: Female - 25 to 29 years'
+  census_2010_raw_assembled$'Age: Total - 30 to 34 years' = census_2010_raw_assembled$'Age: Male - 30 to 34 years' + census_2010_raw_assembled$'Age: Female - 30 to 34 years'
+  census_2010_raw_assembled$'Age: Total - 35 to 39 years' = census_2010_raw_assembled$'Age: Male - 35 to 39 years' + census_2010_raw_assembled$'Age: Female - 35 to 39 years'
+  census_2010_raw_assembled$'Age: Total - 40 to 44 years' = census_2010_raw_assembled$'Age: Male - 40 to 44 years' + census_2010_raw_assembled$'Age: Female - 40 to 44 years'
+  census_2010_raw_assembled$'Age: Total - 45 to 49 years' = census_2010_raw_assembled$'Age: Male - 45 to 49 years' + census_2010_raw_assembled$'Age: Female - 45 to 49 years'
+  census_2010_raw_assembled$'Age: Total - 50 to 54 years' = census_2010_raw_assembled$'Age: Male - 50 to 54 years' + census_2010_raw_assembled$'Age: Female - 50 to 54 years'
+  census_2010_raw_assembled$'Age: Total - 55 to 59 years' = census_2010_raw_assembled$'Age: Male - 55 to 59 years' + census_2010_raw_assembled$'Age: Female - 55 to 59 years'
+  census_2010_raw_assembled$'Age: Total - 60 and 61 years' = census_2010_raw_assembled$'Age: Male - 60 and 61 years' + census_2010_raw_assembled$'Age: Female - 60 and 61 years'
+  census_2010_raw_assembled$'Age: Total - 62 to 64 years' = census_2010_raw_assembled$'Age: Male - 62 to 64 years' + census_2010_raw_assembled$'Age: Female - 62 to 64 years'
+  census_2010_raw_assembled$'Age: Total - 65 and 66 years' = census_2010_raw_assembled$'Age: Male - 65 and 66 years' + census_2010_raw_assembled$'Age: Female - 65 and 66 years'
+  census_2010_raw_assembled$'Age: Total - 67 to 69 years' = census_2010_raw_assembled$'Age: Male - 67 to 69 years' + census_2010_raw_assembled$'Age: Female - 67 to 69 years'
+  census_2010_raw_assembled$'Age: Total - 70 to 74 years' = census_2010_raw_assembled$'Age: Male - 70 to 74 years' + census_2010_raw_assembled$'Age: Female - 70 to 74 years'
+  census_2010_raw_assembled$'Age: Total - 75 to 79 years' = census_2010_raw_assembled$'Age: Male - 75 to 79 years' + census_2010_raw_assembled$'Age: Female - 75 to 79 years'
+  census_2010_raw_assembled$'Age: Total - 80 to 84 years' = census_2010_raw_assembled$'Age: Male - 80 to 84 years' + census_2010_raw_assembled$'Age: Female - 80 to 84 years'
+  census_2010_raw_assembled$'Age: Total - 85 years and over' = census_2010_raw_assembled$'Age: Male - 85 years and over' + census_2010_raw_assembled$'Age: Female - 85 years and over'
+  census_2010_raw_assembled$'Age: Total - Under 18 years' = census_2010_raw_assembled$'Age: Male - Under 18 years' + census_2010_raw_assembled$'Age: Female - Under 18 years'
+  census_2010_raw_assembled$'Age: Total - 18 and 19 years' = census_2010_raw_assembled$'Age: Male - 18 and 19 years' + census_2010_raw_assembled$'Age: Female - 18 and 19 years'
+}
+```
+
+## Format Educational Attainment Data
+``` {r}
+# Aggregate educational attainment for 2000
+{
+census_2000_raw_assembled$'Education: Total - No schooling completed' = census_2000_raw_assembled$'Education: Male - No schooling completed' + census_2000_raw_assembled$'Education: Female - No schooling completed'
+census_2000_raw_assembled$'Education: Total - Nursery to 4th grade' = census_2000_raw_assembled$'Education: Male - Nursery to 4th grade' + census_2000_raw_assembled$'Education: Female - Nursery to 4th grade'
+census_2000_raw_assembled$'Education: Total - 5th and 6th grade' = census_2000_raw_assembled$'Education: Male - 5th and 6th grade' + census_2000_raw_assembled$'Education: Female - 5th and 6th grade'
+census_2000_raw_assembled$'Education: Total - 7th and 8th grade' = census_2000_raw_assembled$'Education: Male - 7th and 8th grade' + census_2000_raw_assembled$'Education: Female - 7th and 8th grade'
+census_2000_raw_assembled$'Education: Total - 9th grade' = census_2000_raw_assembled$'Education: Male - 9th grade' + census_2000_raw_assembled$'Education: Female - 9th grade'
+census_2000_raw_assembled$'Education: Total - 10th grade' = census_2000_raw_assembled$'Education: Male - 10th grade' + census_2000_raw_assembled$'Education: Female - 10th grade'
+census_2000_raw_assembled$'Education: Total - 11th grade' = census_2000_raw_assembled$'Education: Male - 11th grade' + census_2000_raw_assembled$'Education: Female - 11th grade'
+census_2000_raw_assembled$'Education: Total - 12th grade no diploma' = census_2000_raw_assembled$'Education: Male - 12th grade no diploma' + census_2000_raw_assembled$'Education: Female - 12th grade no diploma'
+census_2000_raw_assembled$'Education: Total - High school graduate (includes equivalency)' = census_2000_raw_assembled$'Education: Male - High school graduate (includes equivalency)' + census_2000_raw_assembled$'Education: Female - High school graduate (includes equivalency)'
+census_2000_raw_assembled$'Education: Total - Some college less than 1 year' = census_2000_raw_assembled$'Education: Male - Some college less than 1 year' + census_2000_raw_assembled$'Education: Female - Some college less than 1 year'
+census_2000_raw_assembled$'Education: Total - Some college 1 or more years no degree' = census_2000_raw_assembled$'Education: Male - Some college 1 or more years no degree' + census_2000_raw_assembled$'Education: Female - Some college 1 or more years no degree'
+census_2000_raw_assembled$'Education: Total - Associate degree' = census_2000_raw_assembled$'Education: Male - Associate degree' + census_2000_raw_assembled$'Education: Female - Associate degree'
+census_2000_raw_assembled$'Education: Total - Bachelors degree' = census_2000_raw_assembled$'Education: Male - Bachelors degree' + census_2000_raw_assembled$'Education: Female - Bachelors degree'
+census_2000_raw_assembled$'Education: Total - Masters degree' = census_2000_raw_assembled$'Education: Male - Masters degree' + census_2000_raw_assembled$'Education: Female - Masters degree'
+census_2000_raw_assembled$'Education: Total - Professional school degree' = census_2000_raw_assembled$'Education: Male - Professional school degree' + census_2000_raw_assembled$'Education: Female - Professional school degree'
+census_2000_raw_assembled$'Education: Total - Doctorate degree' = census_2000_raw_assembled$'Education: Male - Doctorate degree' + census_2000_raw_assembled$'Education: Female - Doctorate degree'
+}
+
+# Aggregate educational attainment for 2010
+{
+  census_2010_raw_assembled$'Education: Total - No schooling completed' = census_2010_raw_assembled$'Education: Male - No schooling completed' + census_2010_raw_assembled$'Education: Female - No schooling completed'
+  census_2010_raw_assembled$'Education: Total - Nursery to 4th grade' = census_2010_raw_assembled$'Education: Male - Nursery to 4th grade' + census_2010_raw_assembled$'Education: Female - Nursery to 4th grade'
+  census_2010_raw_assembled$'Education: Total - 5th and 6th grade' = census_2010_raw_assembled$'Education: Male - 5th and 6th grade' + census_2010_raw_assembled$'Education: Female - 5th and 6th grade'
+  census_2010_raw_assembled$'Education: Total - 7th and 8th grade' = census_2010_raw_assembled$'Education: Male - 7th and 8th grade' + census_2010_raw_assembled$'Education: Female - 7th and 8th grade'
+  census_2010_raw_assembled$'Education: Total - 9th grade' = census_2010_raw_assembled$'Education: Male - 9th grade' + census_2010_raw_assembled$'Education: Female - 9th grade'
+  census_2010_raw_assembled$'Education: Total - 10th grade' = census_2010_raw_assembled$'Education: Male - 10th grade' + census_2010_raw_assembled$'Education: Female - 10th grade'
+  census_2010_raw_assembled$'Education: Total - 11th grade' = census_2010_raw_assembled$'Education: Male - 11th grade' + census_2010_raw_assembled$'Education: Female - 11th grade'
+  census_2010_raw_assembled$'Education: Total - 12th grade no diploma' = census_2010_raw_assembled$'Education: Male - 12th grade no diploma' + census_2010_raw_assembled$'Education: Female - 12th grade no diploma'
+  census_2010_raw_assembled$'Education: Total - High school graduate (includes equivalency)' = census_2010_raw_assembled$'Education: Male - High school graduate (includes equivalency)' + census_2010_raw_assembled$'Education: Female - High school graduate (includes equivalency)'
+  census_2010_raw_assembled$'Education: Total - Some college less than 1 year' = census_2010_raw_assembled$'Education: Male - Some college less than 1 year' + census_2010_raw_assembled$'Education: Female - Some college less than 1 year'
+  census_2010_raw_assembled$'Education: Total - Some college 1 or more years no degree' = census_2010_raw_assembled$'Education: Male - Some college 1 or more years no degree' + census_2010_raw_assembled$'Education: Female - Some college 1 or more years no degree'
+  census_2010_raw_assembled$'Education: Total - Associate degree' = census_2010_raw_assembled$'Education: Male - Associate degree' + census_2010_raw_assembled$'Education: Female - Associate degree'
+  census_2010_raw_assembled$'Education: Total - Bachelors degree' = census_2010_raw_assembled$'Education: Male - Bachelors degree' + census_2010_raw_assembled$'Education: Female - Bachelors degree'
+  census_2010_raw_assembled$'Education: Total - Masters degree' = census_2010_raw_assembled$'Education: Male - Masters degree' + census_2010_raw_assembled$'Education: Female - Masters degree'
+  census_2010_raw_assembled$'Education: Total - Professional school degree' = census_2010_raw_assembled$'Education: Male - Professional school degree' + census_2010_raw_assembled$'Education: Female - Professional school degree'
+  census_2010_raw_assembled$'Education: Total - Doctorate degree' = census_2010_raw_assembled$'Education: Male - Doctorate degree' + census_2010_raw_assembled$'Education: Female - Doctorate degree'
+}
+```
+
+## Calculate markers of gentrification susceptibility
+``` {r}
+# Define susceptible areas in 2000 (susceptible = 1, not susceptible = 0)
+{
+  census_2000_raw_assembled$Susceptible <- 0
+  census_2000_raw_assembled$Susceptible[census_2000_raw_assembled$`Median Household Income` < (census_2000_raw_assembled$`County Median Household Income`/2)] <- 1
+}
+
+# Define susceptible areas in 2010 (susceptible = 1, not susceptible = 0)
+{
+  census_2010_raw_assembled$Susceptible <- 0
+  census_2010_raw_assembled$Susceptible[census_2010_raw_assembled$`Median Household Income` < (census_2010_raw_assembled$`County Median Household Income`/2)] <- 1
+}
+```
+
+## Count households
+``` {r}
+# Calculate total numbers of households for 2000 and 2010
+census_2000_raw_assembled$'Average Household Income' <- census_2000_raw_assembled$`Aggregate Household Income`/census_2000_raw_assembled$`Income: Total`
+census_2010_raw_assembled$'Average Household Income' <- census_2010_raw_assembled$`Aggregate Household Income`/census_2010_raw_assembled$`Income: Total`
+```
+
+## Calculate markers of gentrification
+``` {r}
+census_2000_raw_assembled$'PCT Average Household Income: Tract To County' <- census_2000_raw_assembled$`Average Household Income`/(sum(census_2000_raw_assembled$`Aggregate Household Income`)/sum(census_2000_raw_assembled$`Income: Total`))
+census_2010_raw_assembled$'PCT Average Household Income: Tract To County' <- census_2010_raw_assembled$`Average Household Income`/(sum(census_2010_raw_assembled$`Aggregate Household Income`)/sum(census_2010_raw_assembled$`Income: Total`))
+
+census_2000_raw_assembled$'PCT White: Tract to County' <- census_2000_raw_assembled$`PCT Race: White (Non-Hispanic)`/(sum(census_2000_raw_assembled$`Race: White (Non-Hispanic)`)/sum(census_2000_raw_assembled$`Race: Total`))
+census_2010_raw_assembled$'PCT White: Tract to County' <- census_2010_raw_assembled$`PCT Race: White (Non-Hispanic)`/(sum(census_2010_raw_assembled$`Race: White (Non-Hispanic)`)/sum(census_2010_raw_assembled$`Race: Total`))
+
+census_2000_raw_assembled$'PCT Household Rent: Tract To County' <- census_2000_raw_assembled$`Median Gross Rent`/census_2000_raw_assembled$`County Median Rent`
+census_2010_raw_assembled$'PCT Household Rent: Tract To County' <- census_2010_raw_assembled$`Median Gross Rent`/census_2010_raw_assembled$`County Median Rent`
+
+census_2000_raw_assembled$'Education: Bachelor Plus' <- census_2000_raw_assembled$`Education: Total - Bachelors degree` +
+                                                        census_2000_raw_assembled$`Education: Total - Masters degree` +
+                                                        census_2000_raw_assembled$`Education: Total - Professional school degree` +
+                                                        census_2000_raw_assembled$`Education: Total - Doctorate degree`
+
+census_2010_raw_assembled$'Education: Bachelor Plus' <- census_2010_raw_assembled$`Education: Total - Bachelors degree` +
+                                                        census_2010_raw_assembled$`Education: Total - Masters degree` +
+                                                        census_2010_raw_assembled$`Education: Total - Professional school degree` +
+                                                        census_2010_raw_assembled$`Education: Total - Doctorate degree`
+
+census_2000_raw_assembled$'PCT Education Bachelor Plus: Tract to County' <- census_2000_raw_assembled$'Education: Bachelor Plus'/census_2000_raw_assembled$`Education: Total`
+census_2010_raw_assembled$'PCT Education Bachelor Plus: Tract to County' <- census_2010_raw_assembled$'Education: Bachelor Plus'/census_2010_raw_assembled$`Education: Total`
+
+# Create an empty column to measure change per topic, populate it with 0s
+census_2010_raw_assembled$Gap_Income <- 0
+census_2010_raw_assembled$Gap_Race <- 0
+census_2010_raw_assembled$Gap_Rent <- 0
+census_2010_raw_assembled$Gap_Education <- 0
+
+# Join 2000 data to enable calculations of gentrification
+census_2010_raw_assembled <- dplyr::full_join(x = census_2010_raw_assembled, y = census_2000_raw_assembled[ , c("tract","PCT Average Household Income: Tract To County","PCT White: Tract to County","PCT Household Rent: Tract To County","PCT Education Bachelor Plus: Tract to County")], by = "tract", all.x=TRUE)
+
+# Calculate gentrification scores for each factor (income, race, rent, education)
+census_2010_raw_assembled$Gap_Income <- census_2010_raw_assembled$`PCT Average Household Income: Tract To County.x` - census_2010_raw_assembled$`PCT Average Household Income: Tract To County.y`
+census_2010_raw_assembled$Gap_Race <- census_2010_raw_assembled$`PCT White: Tract to County.x` - census_2010_raw_assembled$`PCT White: Tract to County.y`
+census_2010_raw_assembled$Gap_Rent <- census_2010_raw_assembled$`PCT Household Rent: Tract To County.x` - census_2010_raw_assembled$`PCT Household Rent: Tract To County.y`
+census_2010_raw_assembled$Gap_Education <- census_2010_raw_assembled$`PCT Education Bachelor Plus: Tract to County.x` - census_2010_raw_assembled$`PCT Education Bachelor Plus: Tract to County.y`
+census_2010_raw_assembled$Gentrified_Income <- 0
+census_2010_raw_assembled$Gentrified_Race <- 0
+census_2010_raw_assembled$Gentrified_Rent <- 0
+census_2010_raw_assembled$Gentrified_Education <- 0
+census_2010_raw_assembled$Gentrified_Income[census_2010_raw_assembled$Gap_Income > 0.1] <- 1
+census_2010_raw_assembled$Gentrified_Race[census_2010_raw_assembled$Gap_Race > 0.1] <- 1
+census_2010_raw_assembled$Gentrified_Rent[census_2010_raw_assembled$Gap_Rent > 0.1] <- 1
+census_2010_raw_assembled$Gentrified_Education[census_2010_raw_assembled$Gap_Education > 0.1] <- 1
+
+# Sum up for total gentrification score for 2010
+census_2010_raw_assembled$Gentrified_Score = census_2010_raw_assembled$Gentrified_Income +
+                                              census_2010_raw_assembled$Gentrified_Race +
+                                              census_2010_raw_assembled$Gentrified_Rent +
+                                              census_2010_raw_assembled$Gentrified_Education
+```
+## Format %s
+``` {r}
+# Format as %s for 2000
+{
+  census_2000_raw_assembled$'Percent Race: Total (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Total (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: White (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: White (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Black or African American (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Black or African American (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: American Indian and Alaska Native (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: American Indian and Alaska Native (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Asian (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Asian (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Other (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Other (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Race: Two or More (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Race: Two or More (Non-Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Race: Total (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Race: Total (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: White (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: White (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Black or African American (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Black or African American (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: American Indian and Alaska Native (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: American Indian and Alaska Native (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Asian (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Asian (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Native Hawaiian and Other Pacific Islander  (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Native Hawaiian and Other Pacific Islander  (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Other (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Other (Hispanic)`)
+  census_2000_raw_assembled$'Percent Race: Race: Two or More (Hispanic)' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Race: Race: Two or More (Hispanic)`)
+  census_2000_raw_assembled$'Percent Average Household Income: Tract To County' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Average Household Income: Tract To County`)
+  census_2000_raw_assembled$'Percent White: Tract to County' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT White: Tract to County`)
+  census_2000_raw_assembled$'Percent Household Rent: Tract To County' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Household Rent: Tract To County`)
+  census_2000_raw_assembled$'Percent Education Bachelor Plus: Tract to County' <- label_percent(accuracy=0.1)(census_2000_raw_assembled$`PCT Education Bachelor Plus: Tract to County`)
+}
+
+# Format as %s for 2010
+{
+  census_2010_raw_assembled$'Percent Race: Total (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Total (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: White (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: White (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Black or African American (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Black or African American (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: American Indian and Alaska Native (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: American Indian and Alaska Native (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Asian (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Asian (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Other (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Other (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Race: Two or More (Non-Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Race: Two or More (Non-Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Race: Total (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Race: Total (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: White (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: White (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Black or African American (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Black or African American (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: American Indian and Alaska Native (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: American Indian and Alaska Native (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Asian (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Asian (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Native Hawaiian and Other Pacific Islander  (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Native Hawaiian and Other Pacific Islander  (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Other (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Other (Hispanic)`)
+  census_2010_raw_assembled$'Percent Race: Race: Two or More (Hispanic)' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Race: Race: Two or More (Hispanic)`)
+  census_2010_raw_assembled$'Percent Average Household Income: Tract To County.x' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Average Household Income: Tract To County.x`)
+  census_2010_raw_assembled$'Percent White: Tract to County.x' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT White: Tract to County.x`)
+  census_2010_raw_assembled$'Percent Household Rent: Tract To County.x' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Household Rent: Tract To County.x`)
+  census_2010_raw_assembled$'Percent Education Bachelor Plus: Tract to County.x' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Education Bachelor Plus: Tract to County.x`)
+  census_2010_raw_assembled$'Percent Average Household Income: Tract To County.y' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Average Household Income: Tract To County.y`)
+  census_2010_raw_assembled$'Percent White: Tract to County.y' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT White: Tract to County.y`)
+  census_2010_raw_assembled$'Percent Household Rent: Tract To County.y' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Household Rent: Tract To County.y`)
+  census_2010_raw_assembled$'Percent Education Bachelor Plus: Tract to County.y' <- label_percent(accuracy=0.1)(census_2010_raw_assembled$`PCT Education Bachelor Plus: Tract to County.y`)
+}
+```
+## Update Gentrification Score
+Need to do this so that susceptibility and gentrification can be on the same color scale.
+``` {r}
+# Create gentrification_status field in both datasets
+{
+census_2010_raw_assembled$Gentrification_Status <- 0
+census_2000_raw_assembled$Gentrification_Status <- 0
+
+# Gentrification Scoring Plan
+#0 = not gentrified, not susceptible
+#1 = susceptible
+#2 = gent score 1
+#3 = gent score 2
+#4 = gent score 3
+#5 = gent score 4
+#6 = susceptible
+census_2010_raw_assembled$Gentrification_Status[census_2010_raw_assembled$Gentrified_Score == 1] <- 2
+census_2010_raw_assembled$Gentrification_Status[census_2010_raw_assembled$Gentrified_Score == 2] <- 3
+census_2010_raw_assembled$Gentrification_Status[census_2010_raw_assembled$Gentrified_Score == 3] <- 4
+census_2010_raw_assembled$Gentrification_Status[census_2010_raw_assembled$Gentrified_Score == 4] <- 5
+census_2010_raw_assembled$Gentrification_Status[(census_2010_raw_assembled$Gentrified_Score == 0) & (census_2010_raw_assembled$Susceptible == 1)] <- 1
+census_2000_raw_assembled$Gentrification_Status[census_2000_raw_assembled$Susceptible == 1] <- 1
+}
+```
+
+## Calculate Educational Attainment Percentages
+``` {r}
+# Calculate educational attainment percentages for 2000
+{
+census_2000_raw_assembled$'PCT Education: No schooling completed' <- census_2000_raw_assembled$'Education: Total - No schooling completed'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Nursery to 4th grade' <- census_2000_raw_assembled$'Education: Total - Nursery to 4th grade'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: 5th and 6th grade' <- census_2000_raw_assembled$'Education: Total - 5th and 6th grade'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: 7th and 8th grade' <- census_2000_raw_assembled$'Education: Total - 7th and 8th grade'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: 9th grade' <- census_2000_raw_assembled$'Education: Total - 9th grade'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: 10th grade' <- census_2000_raw_assembled$'Education: Total - 10th grade'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: 11th grade' <- census_2000_raw_assembled$'Education: Total - 11th grade'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: 12th grade no diploma' <- census_2000_raw_assembled$'Education: Total - 12th grade no diploma'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: High school graduate (includes equivalency)' <- census_2000_raw_assembled$'Education: Total - High school graduate (includes equivalency)'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Some college less than 1 year' <- census_2000_raw_assembled$'Education: Total - Some college less than 1 year'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Some college 1 or more years no degree' <- census_2000_raw_assembled$'Education: Total - Some college 1 or more years no degree'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Associate degree' <- census_2000_raw_assembled$'Education: Total - Associate degree'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Bachelors degree' <- census_2000_raw_assembled$'Education: Total - Bachelors degree'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Masters degree' <- census_2000_raw_assembled$'Education: Total - Masters degree'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Professional school degree' <- census_2000_raw_assembled$'Education: Total - Professional school degree'/census_2000_raw_assembled$'Education: Total'
+census_2000_raw_assembled$'PCT Education: Doctorate degree' <- census_2000_raw_assembled$'Education: Total - Doctorate degree'/census_2000_raw_assembled$'Education: Total'
+}
+
+# Calculate educational attainment percentages for 2010
+{
+census_2010_raw_assembled$'PCT Education: No schooling completed' <- census_2010_raw_assembled$'Education: Total - No schooling completed'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Nursery to 4th grade' <- census_2010_raw_assembled$'Education: Total - Nursery to 4th grade'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: 5th and 6th grade' <- census_2010_raw_assembled$'Education: Total - 5th and 6th grade'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: 7th and 8th grade' <- census_2010_raw_assembled$'Education: Total - 7th and 8th grade'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: 9th grade' <- census_2010_raw_assembled$'Education: Total - 9th grade'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: 10th grade' <- census_2010_raw_assembled$'Education: Total - 10th grade'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: 11th grade' <- census_2010_raw_assembled$'Education: Total - 11th grade'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: 12th grade no diploma' <- census_2010_raw_assembled$'Education: Total - 12th grade no diploma'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: High school graduate (includes equivalency)' <- census_2010_raw_assembled$'Education: Total - High school graduate (includes equivalency)'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Some college less than 1 year' <- census_2010_raw_assembled$'Education: Total - Some college less than 1 year'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Some college 1 or more years no degree' <- census_2010_raw_assembled$'Education: Total - Some college 1 or more years no degree'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Associate degree' <- census_2010_raw_assembled$'Education: Total - Associate degree'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Bachelors degree' <- census_2010_raw_assembled$'Education: Total - Bachelors degree'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Masters degree' <- census_2010_raw_assembled$'Education: Total - Masters degree'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Professional school degree' <- census_2010_raw_assembled$'Education: Total - Professional school degree'/census_2010_raw_assembled$'Education: Total'
+census_2010_raw_assembled$'PCT Education: Doctorate degree' <- census_2010_raw_assembled$'Education: Total - Doctorate degree'/census_2010_raw_assembled$'Education: Total'
+}
+```
+## Calculate Income Percentages
+``` {r}
+# Calculate percentages of population in each income bracket for 2000
+{
+  census_2000_raw_assembled$'PCT Income: Less than $10000' <- census_2000_raw_assembled$'Income: Less than $10000'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $10000 to $14999' <- census_2000_raw_assembled$'Income: $10000 to $14999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $15000 to $19999' <- census_2000_raw_assembled$'Income: $15000 to $19999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $20000 to $24999' <- census_2000_raw_assembled$'Income: $20000 to $24999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $25000 to $29999' <- census_2000_raw_assembled$'Income: $25000 to $29999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $30000 to $34999' <- census_2000_raw_assembled$'Income: $30000 to $34999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $35000 to $39999' <- census_2000_raw_assembled$'Income: $35000 to $39999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $40000 to $44999' <- census_2000_raw_assembled$'Income: $40000 to $44999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $45000 to $49999' <- census_2000_raw_assembled$'Income: $45000 to $49999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $50000 to $59999' <- census_2000_raw_assembled$'Income: $50000 to $59999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $60000 to $74999' <- census_2000_raw_assembled$'Income: $60000 to $74999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $75000 to $99999' <- census_2000_raw_assembled$'Income: $75000 to $99999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $100000 to $124999' <- census_2000_raw_assembled$'Income: $100000 to $124999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $125000 to $149999' <- census_2000_raw_assembled$'Income: $125000 to $149999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $150000 to $199999' <- census_2000_raw_assembled$'Income: $150000 to $199999'/census_2000_raw_assembled$'Income: Total'
+  census_2000_raw_assembled$'PCT Income: $200000 or more' <- census_2000_raw_assembled$'Income: $200000 or more'/census_2000_raw_assembled$'Income: Total'
+}
+
+# Calculate percentages of population in each income bracket for 2010
+{
+  census_2010_raw_assembled$'PCT Income: Less than $10000' <- census_2010_raw_assembled$'Income: Less than $10000'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $10000 to $14999' <- census_2010_raw_assembled$'Income: $10000 to $14999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $15000 to $19999' <- census_2010_raw_assembled$'Income: $15000 to $19999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $20000 to $24999' <- census_2010_raw_assembled$'Income: $20000 to $24999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $25000 to $29999' <- census_2010_raw_assembled$'Income: $25000 to $29999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $30000 to $34999' <- census_2010_raw_assembled$'Income: $30000 to $34999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $35000 to $39999' <- census_2010_raw_assembled$'Income: $35000 to $39999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $40000 to $44999' <- census_2010_raw_assembled$'Income: $40000 to $44999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $45000 to $49999' <- census_2010_raw_assembled$'Income: $45000 to $49999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $50000 to $59999' <- census_2010_raw_assembled$'Income: $50000 to $59999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $60000 to $74999' <- census_2010_raw_assembled$'Income: $60000 to $74999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $75000 to $99999' <- census_2010_raw_assembled$'Income: $75000 to $99999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $100000 to $124999' <- census_2010_raw_assembled$'Income: $100000 to $124999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $125000 to $149999' <- census_2010_raw_assembled$'Income: $125000 to $149999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $150000 to $199999' <- census_2010_raw_assembled$'Income: $150000 to $199999'/census_2010_raw_assembled$'Income: Total'
+  census_2010_raw_assembled$'PCT Income: $200000 or more' <- census_2010_raw_assembled$'Income: $200000 or more'/census_2010_raw_assembled$'Income: Total'
+}
+```
+
+## Calculate Rent Percentages
+``` {r}
+# Calculate rent percentages for 2000
+{
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - Less than $100' <- census_2000_raw_assembled$'Rental Contracts: Monthly - Less than $100'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $100 to $149' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $100 to $149'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $150 to $199' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $150 to $199'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $200 to $249' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $200 to $249'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $250 to $299' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $250 to $299'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $300 to $349' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $300 to $349'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $350 to $399' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $350 to $399'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $400 to $449' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $400 to $449'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $450 to $499' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $450 to $499'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $500 to $549' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $500 to $549'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $550 to $599' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $550 to $599'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $600 to $649' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $600 to $649'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $650 to $699' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $650 to $699'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $700 to $749' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $700 to $749'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $750 to $799' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $750 to $799'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $800 to $899' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $800 to $899'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $900 to $999' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $900 to $999'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $1000 to $1249' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $1000 to $1249'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $1250 to $1499' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $1250 to $1499'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $1500 to $1999' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $1500 to $1999'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2000_raw_assembled$'PCT Rental Contracts: Monthly - $2000 or more' <- census_2000_raw_assembled$'Rental Contracts: Monthly - $2000 or more'/census_2000_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+}
+
+# Calculate rent percentages for 2010
+{
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - Less than $100' <- census_2010_raw_assembled$'Rental Contracts: Monthly - Less than $100'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $100 to $149' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $100 to $149'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $150 to $199' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $150 to $199'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $200 to $249' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $200 to $249'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $250 to $299' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $250 to $299'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $300 to $349' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $300 to $349'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $350 to $399' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $350 to $399'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $400 to $449' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $400 to $449'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $450 to $499' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $450 to $499'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $500 to $549' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $500 to $549'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $550 to $599' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $550 to $599'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $600 to $649' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $600 to $649'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $650 to $699' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $650 to $699'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $700 to $749' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $700 to $749'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $750 to $799' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $750 to $799'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $800 to $899' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $800 to $899'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $900 to $999' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $900 to $999'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $1000 to $1249' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $1000 to $1249'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $1250 to $1499' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $1250 to $1499'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $1500 to $1999' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $1500 to $1999'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+  census_2010_raw_assembled$'PCT Rental Contracts: Monthly - $2000 or more' <- census_2010_raw_assembled$'Rental Contracts: Monthly - $2000 or more'/census_2010_raw_assembled$'Rental Contracts: Monthly - With Cash Rent Total'
+}
+```
+
+## Write out CSVs for the App
+```{r}
+write_csv(census_2000_raw_assembled, "data/census_2000_raw_assembled.csv")
+write_csv(census_2010_raw_assembled, "data/census_2010_raw_assembled.csv")
+```
+
+## Pivot selected columns to create dataframes for bar graphs
+``` {r}
+# Create a race dataframe for 2000 bargraphs
+tract_race_2000 <- census_2000_raw_assembled[,c('tract',
+                                      'PCT Race: White (Non-Hispanic)',
+                                      'PCT Race: Black or African American (Non-Hispanic)',
+                                      'PCT Race: American Indian and Alaska Native (Non-Hispanic)',
+                                      'PCT Race: Asian (Non-Hispanic)',
+                                      'PCT Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)',
+                                      'PCT Race: Other (Non-Hispanic)',
+                                      'PCT Race: Race: Two or More (Non-Hispanic)',
+                                      'PCT Race: White (Hispanic)',
+                                      'PCT Race: Black or African American (Hispanic)',
+                                      'PCT Race: American Indian and Alaska Native (Hispanic)',
+                                      'PCT Race: Asian (Hispanic)',
+                                      'PCT Race: Native Hawaiian and Other Pacific Islander  (Hispanic)',
+                                      'PCT Race: Other (Hispanic)',
+                                      'PCT Race: Race: Two or More (Hispanic)')]
+
+# Create a race dataframe for 2010 bargraphs
+tract_race_2010 <- census_2010_raw_assembled[,c('tract',
+                                                'PCT Race: White (Non-Hispanic)',
+                                                'PCT Race: Black or African American (Non-Hispanic)',
+                                                'PCT Race: American Indian and Alaska Native (Non-Hispanic)',
+                                                'PCT Race: Asian (Non-Hispanic)',
+                                                'PCT Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)',
+                                                'PCT Race: Other (Non-Hispanic)',
+                                                'PCT Race: Race: Two or More (Non-Hispanic)',
+                                                'PCT Race: Race: Total (Hispanic)',
+                                                'PCT Race: White (Hispanic)',
+                                                'PCT Race: Black or African American (Hispanic)',
+                                                'PCT Race: American Indian and Alaska Native (Hispanic)',
+                                                'PCT Race: Asian (Hispanic)',
+                                                'PCT Race: Native Hawaiian and Other Pacific Islander  (Hispanic)',
+                                                'PCT Race: Other (Hispanic)',
+                                                'PCT Race: Race: Two or More (Hispanic)')]
+# Pivot both to be bar-graphable
+tract_race_2000 <- tract_race_2000 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+tract_race_2010 <- tract_race_2010 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+
+# Create an educational attainment dataframe for 2000 bargraphs
+tract_education_2000 <- census_2000_raw_assembled[,c('tract',
+                                                    'PCT Education: No schooling completed',
+                                                    'PCT Education: Nursery to 4th grade',
+                                                    'PCT Education: 5th and 6th grade',
+                                                    'PCT Education: 7th and 8th grade',
+                                                    'PCT Education: 9th grade',
+                                                    'PCT Education: 10th grade',
+                                                    'PCT Education: 11th grade',
+                                                    'PCT Education: 12th grade no diploma',
+                                                    'PCT Education: High school graduate (includes equivalency)',
+                                                    'PCT Education: Some college less than 1 year',
+                                                    'PCT Education: Some college 1 or more years no degree',
+                                                    'PCT Education: Associate degree',
+                                                    'PCT Education: Bachelors degree',
+                                                    'PCT Education: Masters degree',
+                                                    'PCT Education: Professional school degree',
+                                                    'PCT Education: Doctorate degree')]
+
+# Create an educational attainment dataframe for 2010 bargraphs
+tract_education_2010<- census_2010_raw_assembled[,c('tract',
+                                                    'PCT Education: No schooling completed',
+                                                    'PCT Education: Nursery to 4th grade',
+                                                    'PCT Education: 5th and 6th grade',
+                                                    'PCT Education: 7th and 8th grade',
+                                                    'PCT Education: 9th grade',
+                                                    'PCT Education: 10th grade',
+                                                    'PCT Education: 11th grade',
+                                                    'PCT Education: 12th grade no diploma',
+                                                    'PCT Education: High school graduate (includes equivalency)',
+                                                    'PCT Education: Some college less than 1 year',
+                                                    'PCT Education: Some college 1 or more years no degree',
+                                                    'PCT Education: Associate degree',
+                                                    'PCT Education: Bachelors degree',
+                                                    'PCT Education: Masters degree',
+                                                    'PCT Education: Professional school degree',
+                                                    'PCT Education: Doctorate degree')]
+
+# Pivot both to be bar-graphable
+tract_education_2000 <- tract_education_2000 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+tract_education_2010 <- tract_education_2010 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+
+# Create an household income dataframe for 2000 bargraphs
+tract_income_2000<- census_2000_raw_assembled[,c('tract',
+                                                 'PCT Income: Less than $10000',
+                                                 'PCT Income: $10000 to $14999',
+                                                 'PCT Income: $15000 to $19999',
+                                                 'PCT Income: $20000 to $24999',
+                                                 'PCT Income: $25000 to $29999',
+                                                 'PCT Income: $30000 to $34999',
+                                                 'PCT Income: $35000 to $39999',
+                                                 'PCT Income: $40000 to $44999',
+                                                 'PCT Income: $45000 to $49999',
+                                                 'PCT Income: $50000 to $59999',
+                                                 'PCT Income: $60000 to $74999',
+                                                 'PCT Income: $75000 to $99999',
+                                                 'PCT Income: $100000 to $124999',
+                                                 'PCT Income: $125000 to $149999',
+                                                 'PCT Income: $150000 to $199999',
+                                                 'PCT Income: $200000 or more')]
+
+# Create an household income dataframe for 2010 bargraphs
+tract_income_2010<- census_2010_raw_assembled[,c('tract',
+                                                 'PCT Income: Less than $10000',
+                                                 'PCT Income: $10000 to $14999',
+                                                 'PCT Income: $15000 to $19999',
+                                                 'PCT Income: $20000 to $24999',
+                                                 'PCT Income: $25000 to $29999',
+                                                 'PCT Income: $30000 to $34999',
+                                                 'PCT Income: $35000 to $39999',
+                                                 'PCT Income: $40000 to $44999',
+                                                 'PCT Income: $45000 to $49999',
+                                                 'PCT Income: $50000 to $59999',
+                                                 'PCT Income: $60000 to $74999',
+                                                 'PCT Income: $75000 to $99999',
+                                                 'PCT Income: $100000 to $124999',
+                                                 'PCT Income: $125000 to $149999',
+                                                 'PCT Income: $150000 to $199999',
+                                                 'PCT Income: $200000 or more')]
+
+# Pivot both to be bar-graphable
+tract_income_2000 <- tract_income_2000 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+tract_income_2010 <- tract_income_2010 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+
+# Create a rent dataframe for 2000 bargraphs
+tract_rent_2000<- census_2000_raw_assembled[,c('tract',
+                                               'PCT Rental Contracts: Monthly - Less than $100',
+                                               'PCT Rental Contracts: Monthly - $100 to $149',
+                                               'PCT Rental Contracts: Monthly - $150 to $199',
+                                               'PCT Rental Contracts: Monthly - $200 to $249',
+                                               'PCT Rental Contracts: Monthly - $250 to $299',
+                                               'PCT Rental Contracts: Monthly - $300 to $349',
+                                               'PCT Rental Contracts: Monthly - $350 to $399',
+                                               'PCT Rental Contracts: Monthly - $400 to $449',
+                                               'PCT Rental Contracts: Monthly - $450 to $499',
+                                               'PCT Rental Contracts: Monthly - $500 to $549',
+                                               'PCT Rental Contracts: Monthly - $550 to $599',
+                                               'PCT Rental Contracts: Monthly - $600 to $649',
+                                               'PCT Rental Contracts: Monthly - $650 to $699',
+                                               'PCT Rental Contracts: Monthly - $700 to $749',
+                                               'PCT Rental Contracts: Monthly - $750 to $799',
+                                               'PCT Rental Contracts: Monthly - $800 to $899',
+                                               'PCT Rental Contracts: Monthly - $900 to $999',
+                                               'PCT Rental Contracts: Monthly - $1000 to $1249',
+                                               'PCT Rental Contracts: Monthly - $1250 to $1499',
+                                               'PCT Rental Contracts: Monthly - $1500 to $1999',
+                                               'PCT Rental Contracts: Monthly - $2000 or more')]
+
+# Create a rent dataframe for 2010 bargraphs
+tract_rent_2010<- census_2010_raw_assembled[,c('tract',
+                                               'PCT Rental Contracts: Monthly - Less than $100',
+                                               'PCT Rental Contracts: Monthly - $100 to $149',
+                                               'PCT Rental Contracts: Monthly - $150 to $199',
+                                               'PCT Rental Contracts: Monthly - $200 to $249',
+                                               'PCT Rental Contracts: Monthly - $250 to $299',
+                                               'PCT Rental Contracts: Monthly - $300 to $349',
+                                               'PCT Rental Contracts: Monthly - $350 to $399',
+                                               'PCT Rental Contracts: Monthly - $400 to $449',
+                                               'PCT Rental Contracts: Monthly - $450 to $499',
+                                               'PCT Rental Contracts: Monthly - $500 to $549',
+                                               'PCT Rental Contracts: Monthly - $550 to $599',
+                                               'PCT Rental Contracts: Monthly - $600 to $649',
+                                               'PCT Rental Contracts: Monthly - $650 to $699',
+                                               'PCT Rental Contracts: Monthly - $700 to $749',
+                                               'PCT Rental Contracts: Monthly - $750 to $799',
+                                               'PCT Rental Contracts: Monthly - $800 to $899',
+                                               'PCT Rental Contracts: Monthly - $900 to $999',
+                                               'PCT Rental Contracts: Monthly - $1000 to $1249',
+                                               'PCT Rental Contracts: Monthly - $1250 to $1499',
+                                               'PCT Rental Contracts: Monthly - $1500 to $1999',
+                                               'PCT Rental Contracts: Monthly - $2000 or more')]
+
+# Pivot both to be bar-graphable
+tract_rent_2000 <- tract_rent_2000 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+tract_rent_2010 <- tract_rent_2010 %>% pivot_longer(!tract, names_to = "Measure", values_to = "Percent")
+```
+# Write everything out to CSVs for the App
+```{r}
+write_csv(tract_race_2000, "data/tract_race_2000.csv")
+write_csv(tract_race_2010, "data/tract_race_2010.csv")
+write_csv(tract_education_2000, "data/tract_education_2000.csv")
+write_csv(tract_education_2010, "data/tract_education_2010.csv")
+write_csv(tract_income_2000, "data/tract_income_2000.csv")
+write_csv(tract_income_2010, "data/tract_income_2010.csv")
+write_csv(tract_rent_2000, "data/tract_rent_2000.csv")
+write_csv(tract_rent_2010, "data/tract_rent_2010.csv")
+```

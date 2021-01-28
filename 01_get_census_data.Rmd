@@ -13,6 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load libraries
 library(censusapi)
 library(tidyverse)
+library(readxl)
+library(stringi)
+library(scales)
 
 # Force read the R environment file to pull in my census API key
 readRenviron("~/.Renviron")
@@ -21,11 +24,10 @@ readRenviron("~/.Renviron")
 apis <- listCensusApis()
 
 # Take a look at the available APIs
-View(apis)
+# View(apis)
 ```
 ## Get the metadata for the 2000 Decennial Census Dataset
-
-I found a succinct description of the differences between the four summary files available for the 2000 census data on [an NCSU site](https://projects.ncsu.edu/woodlands//current_pdfs/teleconf_data_sources.pdf). To get the 2000 census data I need, I am using summary file 3 for all variables. Note that census "richer demographics" are only available down to the `block group` level; as a result, this is the smallest area I would be able to map and explore. I will be using ``census tract`` level data (the next step up) for this project.
+I found a succinct description of the differences between the four summary files available for the 2000 census data on [an NCSU site](https://projects.ncsu.edu/woodlands//current_pdfs/teleconf_data_sources.pdf). To get the 2000 census data I need, I am using summary file 3 for all variables. Note that census "richer demographics" are only available down to the `block group` level; as a result, this is the smallest area I would be able to map and explore. I decided to use `census tract` level data (the next step up) for this project to better align with existing work on patterns of gentrification.
 ```{r}
 # Create a new dataframe to store the metadata for the 2000 census and break out the label field
 census_2000_meta_sf3 <- listCensusMetadata(
@@ -36,6 +38,7 @@ census_2000_meta_sf3 <- listCensusMetadata(
 # Prepare to break out the label field by counting the number of times '!!' appears in it
 max(str_count(census_2000_meta_sf3$label, "!!"))
 
+# Break out the census label field
 census_2000_meta_sf3 <- census_2000_meta_sf3 %>% 
   separate(
      label,
@@ -51,11 +54,10 @@ census_2000_meta_sf3 <- census_2000_meta_sf3 %>%
 ```
 
 ## Get the metadata for the 2010 Decennial Census and ACS Datasets
-
-In my dive into census.gov data, I learned that the 2010 census did *not* collect "richer demographics." (I found [ProximityOne's explanation of ``block groups``](http://proximityone.com/blockgroups.htm) particularly helpful to understand what data were collected when and where.) To understand educational attainment, median household income, and housing costs at the census ``tract`` level, I also need to pull from the 2010 ACS 5-year dataset. I have leaned on  the Census Bureau's [list of comparable observations across 2010 ACS and Census 2000 and 2010 data](https://www.census.gov/programs-surveys/acs/guidance/comparing-acs-data/2010.html) to drive the best possible alignment across datasets.
+In my dive into census.gov data, I learned that the 2010 census did *not* collect "richer demographics." (I found [ProximityOne's explanation of ``block groups``](http://proximityone.com/blockgroups.htm) particularly helpful to understand what data were collected when and where.) To understand educational attainment, median household income, and housing costs at the census `tract` level, I would need to pull from the 2010 ACS 5-year dataset. I have leaned on the Census Bureau's [list of comparable observations across 2010 ACS and Census 2000 and 2010 data](https://www.census.gov/programs-surveys/acs/guidance/comparing-acs-data/2010.html) to drive the best possible alignment across 2000 and 2010 datasets.
 
 ``` {r}
-# Create a new dataframe to store the metadata for the 2010 census
+# Create a new dataframe to store the metadata for the 2010 census - didn't end up using this
 census_2010_meta_sf1 <- listCensusMetadata(
  name = 'dec/sf1',
  vintage = '2010'
@@ -64,6 +66,7 @@ census_2010_meta_sf1 <- listCensusMetadata(
 # Prepare to break out the label field by counting the number of times '!!' appears in it
 max(str_count(census_2010_meta_sf1$label, "!!"))
 
+# Break out the census label field
 census_2010_meta_sf1 <- census_2010_meta_sf1 %>%
      separate(
      label,
@@ -74,7 +77,7 @@ census_2010_meta_sf1 <- census_2010_meta_sf1 %>%
      ) %>% 
   arrange(concept, label_01, label_02, label_03, label_04, label_05, label_06)
 
-# Create a new dataframe to store the acs 2010 data
+# Create a new dataframe to store the acs 2010 data - I used this for all demographic data for 2010
 acs_2010_meta_detail <- listCensusMetadata(
  name = 'acs/acs5',
  vintage = '2010'
@@ -83,6 +86,7 @@ acs_2010_meta_detail <- listCensusMetadata(
 # Prepare to break out the label field by counting the number of times '!!' appears in it
 max(str_count(acs_2010_meta_detail$label, "!!"))
 
+# Break out the census label field
 acs_2010_meta_detail <- acs_2010_meta_detail %>%
      separate(
      label,
@@ -98,9 +102,9 @@ acs_2010_meta_detail <- acs_2010_meta_detail %>%
 #write_csv(census_2010_meta, 'data/acs_2010_meta_detail.csv')
 ```
 ## Check out the GEO_ID field needed to connect the demographic and geospatial data
-Note that census tracts shifted between 2000 and 2010 so there might have to be separate layers in the map for each year. There appears to be a partial overlap between 2000 and 2010 ``GEO_ID``s for Davidson County which I need to investigate further, though I think it'd be preferable to do this with the geospatial data.
+Note that `census tract`s shifted between 2000 and 2010 so there might have to be separate layers in the map for each year. There appears to be a partial overlap between 2000 and 2010 `GEO_ID`s for Davidson County which I need to investigate further, though I think it'd be preferable to do this visually using the geospatial data.
 
-As far as I can tell, it is not possible to get ``block group`` data for an entire county with a simple API call. After some digging, I found that [somebody else](https://rstudio-pubs-static.s3.amazonaws.com/19337_2e7f827190514c569ea136db788ce850.html) had run into the same issue and discovered that looping through the ``tract``s in a county is the only way to get ``block group`` numbers. I discovered this before deciding to work with census ``tract``s instead of ``block group``s but am keeping the link here for future reference.
+As far as I can tell, it is not possible to get `block group` data for an entire county with a simple API call. After some digging, I found that [somebody else](https://rstudio-pubs-static.s3.amazonaws.com/19337_2e7f827190514c569ea136db788ce850.html) had run into the same issue and discovered that looping through the `tract`s in a county is the only way to get `block group` numbers. I discovered this before deciding to work with census `tract`s instead of `block group`s but am keeping the link here for future reference.
 
 ``` {r}
 # Get the tract GEOIDs for Davidson County, TN for the 2000 census
@@ -138,137 +142,827 @@ tract_list_2010_acs <- acs_tract_geoids_2010$tract
 #          regionin = "state:47+county:037")
 ```
 ## Define Gentrification
-
 In looking for quantitative definitions of gentrification, I came across many options and realized that there is hardly any agreement on what actually constitutes gentrification. (The Enterprise Community Foundation's [Gentrification Tool](https://www.enterprisecommunity.org/policy-and-advocacy/policy-development-and-research/gentrification-comparison-tool) illustrates the differences in three common methods for defining gentrification quantitatively.)
 
-In lieu of coming up with yet another definition of gentrification for this project, I have opted to calculate the [Ellen and Ding (2016)](https://www.huduser.gov/portal/periodicals/cityscpe/vol18num3/guest.pdf) definition of gentrification, using Nashville's data. Areas which are susceptible to gentrification are those with a mean household income that is under the 40th percentile for the metropolitan area. Areas that have gentrified will show "large relative gains", that is "increases in the ratio of the census tract value to the metropolitan area average of more than 10 percentage points (for example, from 60 percent to 75 percent of the average metropolitan income)" in any of the four following statistics:
+In lieu of coming up with yet another definition of gentrification for this project, I have opted to calculate the [Ellen and Ding (2016)](https://www.huduser.gov/portal/periodicals/cityscpe/vol18num3/guest.pdf) definition of gentrification, using Nashville's data and identify areas susceptible to gentrification using [Bostic and Martin's (2003)](https://doi.org/10.1080%2F0042098032000136147) definition. Areas which are susceptible to gentrification are those with a median household income that is less than 50% of the median for the metropolitan area. Areas that have gentrified will show "large relative gains", that is "increases in the ratio of the census tract value to the metropolitan area average of more than 10 percentage points (for example, from 60 percent to 75 percent of the average metropolitan income)" in any of the four following statistics:
 1) average household income
 2) share of white residents
 3) share of college-educated residents
 4) median rent
 
-These four variables (in addition to monthly mortgage payments) will be the ones that will be mapped in the Nashville Forces of Gentrification project.
+These four variables (in addition to monthly mortgage payments) will be the ones that will be mapped in the *Nashville Forces of Gentrification* project.
 
-# Define the Variables
-The pdf census data dictionaries helped me navigate / understand the dataframes; here are the links for [2000](https://www.census.gov/prod/cen2000/doc/ProfileTD.pdf) and [2010]().
+# Explore the Variables
+Some scratch code for exploring the metadata dataframes.
 ``` {r}
 # Geo Variables 2010:
-BLOCK # Census Block
-BLKGRP #Census Block Group
-TRACT #Census Tract
-GEO_ID #Need this code to map things
+# BLOCK # Census Block
+# BLKGRP #Census Block Group
+# TRACT #Census Tract
+# GEO_ID #Need this code to map things
 
-# 2000 Decennial Census Data Field Names
-# Household Income Brackets - note that family != household, but that Ellen & Ding (2016) reference household income
-DP3047
-DP3048
-DP3049
-DP3050
-DP3051
-DP3052
-DP3053
-DP3054
-DP3055
-DP3056
-DP3057
-DP3058
+# Template to search concepts for specific key words 
+{concept_list <- filter(census_2010_meta_sf1,grepl("RACE",concept))
+  listout <- unique(concept_list$concept)
+  #view(listout)
+}
 
-# Median Household Income
-DP3058
+# View(listout)
 
-# Family Income Brackets - again, family != household, but I'm pulling both because I am not clear on how divergent they actually are
-DP3069
-DP3070
-DP3071
-DP3072
-DP3073
-DP3074
-DP3075
-DP3076
-DP3077
-DP3078
-DP3079
-
-# Median Family Income
-DP3080
-
-# Race and Ethnicity - for most quantitative calculations of gentrification, the main number needed is the % of white, non-Latinx residents. This seems to be due, in part, to a striking lack of racial and ethnic granularity in pre-2000 census data and will enable this project to expand, based on available data, to earlier decades of Nashville's development.
-# I am intentionally focusing on big groups (i.e. not segmenting the Asian and Native Hawaiian and Other Pacific Islander groups) for the sake of expediency in using these data.
-V26
-V27
-V28
-V29
-V30
-V38
-V43
-V44
-V51
-V52
-V57
-V58
-
-# Educational attainment for individuals 25+
-DP2007
-DP2008
-DP2009
-DP2010
-DP2011
-DP2012
-DP2013
-DP2014
-DP2015
-DP2016
-
-# Monthly mortgage status and cost brackets
-DP4066
-DP4067
-DP4068
-DP4069
-DP4070
-DP4071
-DP4072
-DP4073
-
-# Median mortgage
-DP4074
-
-# Not mortgaged and median dollars (?)
-DP4075
-DP4076
-
-# Monthly rent brackets
-DP4085
-DP4086
-DP4087
-DP4088
-DP4089
-DP4090
-DP4091
-
-# No cash rent
-DP4092
-
-# Median rent
-DP4093
-
-# Demographic Variables 2010, by group:
-P13[letter?] #P013001 is median age, both sexes
-H10 # This is the total population in occupied housing units
-H11[letter?] # Total Population by Race / Ethnicity and Housing Status
-H3 # Number of occupied vs vacant units
-H9 # Race / Ethnicity of all
-P10 & P11 # Race / Ethnicity 18+
-
-# Relevant concepts 2010:
-'TOTAL RACES TALLIED FOR HOUSEHOLDERS'
+{concept_list <- concept_list[concept_list$concept == listout[18],]
+  view(concept_list)
+}
 ```
-## Get the Data
-
-The census API maxes out calls at 50 variables, so I have broken up the calls to avoid hitting that limit.
+## Get the Data: 2000
+The code below relies on an excel sheet where I selected the variable names for each call. In addition, since the census API maxes out calls at 50 variables, I have iterated over the calls to avoid hitting that limit.
 ``` {r}
-vars = c("GEO_ID", "DP4085")
-block_geoids_2000 <- getCensus(name = "dec/sf3",
-          vintage = "2000",
-          vars = vars,
-          region = "state:47")
+# Read in the selected variable IDs for 2000 variables from the schema excel sheet
+schema_2000 <- read_excel('data/schema.xlsx', sheet = '2000 names')
+
+# To avoid hitting the census API max, iterate over list and create a new sheet for each variable
+for (i in 2:nrow(schema_2000)) {
+  assign(paste('census_2000_raw_', i, sep = ''), getCensus(
+                              name = "dec/sf3",
+                              vintage = "2000",
+                              vars = c("GEO_ID",
+                                       schema_2000$api_name[i]),
+                              region = "tract:*",
+                              regionin = "state:47+county:037"))
+}
+
+# Combine all the CSVs (please don't judge me, I didn't have time to refactor this code)
+census_2000_raw_assembled <- Reduce(function(x, y) merge(x, y, all=TRUE),
+                                    list(census_2000_raw_2,
+                                    census_2000_raw_3,
+                                    census_2000_raw_4,
+                                    census_2000_raw_5,
+                                    census_2000_raw_6,
+                                    census_2000_raw_7,
+                                    census_2000_raw_8,
+                                    census_2000_raw_9,
+                                    census_2000_raw_10,
+                                    census_2000_raw_11,
+                                    census_2000_raw_12,
+                                    census_2000_raw_13,
+                                    census_2000_raw_14,
+                                    census_2000_raw_15,
+                                    census_2000_raw_16,
+                                    census_2000_raw_17,
+                                    census_2000_raw_18,
+                                    census_2000_raw_19,
+                                    census_2000_raw_20,
+                                    census_2000_raw_21,
+                                    census_2000_raw_22,
+                                    census_2000_raw_23,
+                                    census_2000_raw_24,
+                                    census_2000_raw_25,
+                                    census_2000_raw_26,
+                                    census_2000_raw_27,
+                                    census_2000_raw_28,
+                                    census_2000_raw_29,
+                                    census_2000_raw_30,
+                                    census_2000_raw_31,
+                                    census_2000_raw_32,
+                                    census_2000_raw_33,
+                                    census_2000_raw_34,
+                                    census_2000_raw_35,
+                                    census_2000_raw_36,
+                                    census_2000_raw_37,
+                                    census_2000_raw_38,
+                                    census_2000_raw_39,
+                                    census_2000_raw_40,
+                                    census_2000_raw_41,
+                                    census_2000_raw_42,
+                                    census_2000_raw_43,
+                                    census_2000_raw_44,
+                                    census_2000_raw_45,
+                                    census_2000_raw_46,
+                                    census_2000_raw_47,
+                                    census_2000_raw_48,
+                                    census_2000_raw_49,
+                                    census_2000_raw_50,
+                                    census_2000_raw_51,
+                                    census_2000_raw_52,
+                                    census_2000_raw_53,
+                                    census_2000_raw_54,
+                                    census_2000_raw_55,
+                                    census_2000_raw_56,
+                                    census_2000_raw_57,
+                                    census_2000_raw_58,
+                                    census_2000_raw_59,
+                                    census_2000_raw_60,
+                                    census_2000_raw_61,
+                                    census_2000_raw_62,
+                                    census_2000_raw_63,
+                                    census_2000_raw_64,
+                                    census_2000_raw_65,
+                                    census_2000_raw_66,
+                                    census_2000_raw_67,
+                                    census_2000_raw_68,
+                                    census_2000_raw_69,
+                                    census_2000_raw_70,
+                                    census_2000_raw_71,
+                                    census_2000_raw_72,
+                                    census_2000_raw_73,
+                                    census_2000_raw_74,
+                                    census_2000_raw_75,
+                                    census_2000_raw_76,
+                                    census_2000_raw_77,
+                                    census_2000_raw_78,
+                                    census_2000_raw_79,
+                                    census_2000_raw_80,
+                                    census_2000_raw_81,
+                                    census_2000_raw_82,
+                                    census_2000_raw_83,
+                                    census_2000_raw_84,
+                                    census_2000_raw_85,
+                                    census_2000_raw_86,
+                                    census_2000_raw_87,
+                                    census_2000_raw_88,
+                                    census_2000_raw_89,
+                                    census_2000_raw_90,
+                                    census_2000_raw_91,
+                                    census_2000_raw_92,
+                                    census_2000_raw_93,
+                                    census_2000_raw_94,
+                                    census_2000_raw_95,
+                                    census_2000_raw_96,
+                                    census_2000_raw_97,
+                                    census_2000_raw_98,
+                                    census_2000_raw_99,
+                                    census_2000_raw_100,
+                                    census_2000_raw_101,
+                                    census_2000_raw_102,
+                                    census_2000_raw_103,
+                                    census_2000_raw_104,
+                                    census_2000_raw_105,
+                                    census_2000_raw_106,
+                                    census_2000_raw_107,
+                                    census_2000_raw_108,
+                                    census_2000_raw_109,
+                                    census_2000_raw_110,
+                                    census_2000_raw_111,
+                                    census_2000_raw_112,
+                                    census_2000_raw_113,
+                                    census_2000_raw_114,
+                                    census_2000_raw_115,
+                                    census_2000_raw_116,
+                                    census_2000_raw_117,
+                                    census_2000_raw_118,
+                                    census_2000_raw_119,
+                                    census_2000_raw_120,
+                                    census_2000_raw_121,
+                                    census_2000_raw_122,
+                                    census_2000_raw_123,
+                                    census_2000_raw_124,
+                                    census_2000_raw_125,
+                                    census_2000_raw_126,
+                                    census_2000_raw_127,
+                                    census_2000_raw_128,
+                                    census_2000_raw_129,
+                                    census_2000_raw_130,
+                                    census_2000_raw_131,
+                                    census_2000_raw_132,
+                                    census_2000_raw_133,
+                                    census_2000_raw_134,
+                                    census_2000_raw_135,
+                                    census_2000_raw_136,
+                                    census_2000_raw_137,
+                                    census_2000_raw_138,
+                                    census_2000_raw_139,
+                                    census_2000_raw_140,
+                                    census_2000_raw_141,
+                                    census_2000_raw_142,
+                                    census_2000_raw_143,
+                                    census_2000_raw_144,
+                                    census_2000_raw_145,
+                                    census_2000_raw_146,
+                                    census_2000_raw_147,
+                                    census_2000_raw_148,
+                                    census_2000_raw_149,
+                                    census_2000_raw_150,
+                                    census_2000_raw_151,
+                                    census_2000_raw_152,
+                                    census_2000_raw_153,
+                                    census_2000_raw_154,
+                                    census_2000_raw_155,
+                                    census_2000_raw_156,
+                                    census_2000_raw_157,
+                                    census_2000_raw_158,
+                                    census_2000_raw_159,
+                                    census_2000_raw_160,
+                                    census_2000_raw_161,
+                                    census_2000_raw_162,
+                                    census_2000_raw_163,
+                                    census_2000_raw_164,
+                                    census_2000_raw_165,
+                                    census_2000_raw_166,
+                                    census_2000_raw_167,
+                                    census_2000_raw_168,
+                                    census_2000_raw_169,
+                                    census_2000_raw_170,
+                                    census_2000_raw_171,
+                                    census_2000_raw_172,
+                                    census_2000_raw_173,
+                                    census_2000_raw_174,
+                                    census_2000_raw_175,
+                                    census_2000_raw_176,
+                                    census_2000_raw_177,
+                                    census_2000_raw_178,
+                                    census_2000_raw_179,
+                                    census_2000_raw_180,
+                                    census_2000_raw_181,
+                                    census_2000_raw_182,
+                                    census_2000_raw_183,
+                                    census_2000_raw_184,
+                                    census_2000_raw_185,
+                                    census_2000_raw_186,
+                                    census_2000_raw_187,
+                                    census_2000_raw_188,
+                                    census_2000_raw_189,
+                                    census_2000_raw_190,
+                                    census_2000_raw_191,
+                                    census_2000_raw_192,
+                                    census_2000_raw_193))
+
+# Write out to a CSV if needed
+#write_csv(census_2000_raw_assembled, 'data/census_2000_raw_assembled.csv')
+
+# Rename all columns, column names from the schema sheet
+colnames(census_2000_raw_assembled) <- c('state',
+                                         'county',
+                                         'tract',
+                                         'GEO_ID',
+                                         'Race: Total',
+                                         'Race: Total (Non-Hispanic)',
+                                         'Race: White (Non-Hispanic)',
+                                         'Race: Black or African American (Non-Hispanic)',
+                                         'Race: American Indian and Alaska Native (Non-Hispanic)',
+                                         'Race: Asian (Non-Hispanic)',
+                                         'Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)',
+                                         'Race: Other (Non-Hispanic)',
+                                         'Race: Two or More (Non-Hispanic)',
+                                         'Race: Total (Hispanic)',
+                                         'Race: White (Hispanic)',
+                                         'Race: Black or African American (Hispanic)',
+                                         'Race: American Indian and Alaska Native (Hispanic)',
+                                         'Race: Asian (Hispanic)',
+                                         'Race: Native Hawaiian and Other Pacific Islander  (Hispanic)',
+                                         'Race: Other (Hispanic)',
+                                         'Race: Two or More (Hispanic)',
+                                         'Age: Total',
+                                         'Age: Male Total',
+                                         'Age: Male - Under 1 year',
+                                         'Age: Male - 1 year',
+                                         'Age: Male - 2 years',
+                                         'Age: Male - 3 years',
+                                         'Age: Male - 4 years',
+                                         'Age: Male - 5 years',
+                                         'Age: Male - 6 years',
+                                         'Age: Male - 7 years',
+                                         'Age: Male - 8 years',
+                                         'Age: Male - 9 years',
+                                         'Age: Male - 10 years',
+                                         'Age: Male - 11 years',
+                                         'Age: Male - 12 years',
+                                         'Age: Male - 13 years',
+                                         'Age: Male - 14 years',
+                                         'Age: Male - 15 years',
+                                         'Age: Male - 16 years',
+                                         'Age: Male - 17 years',
+                                         'Age: Male - 18 years',
+                                         'Age: Male - 19 years',
+                                         'Age: Male - 20 years',
+                                         'Age: Male - 21 years',
+                                         'Age: Male - 22 to 24 years',
+                                         'Age: Male - 25 to 29 years',
+                                         'Age: Male - 30 to 34 years',
+                                         'Age: Male - 35 to 39 years',
+                                         'Age: Male - 40 to 44 years',
+                                         'Age: Male - 45 to 49 years',
+                                         'Age: Male - 50 to 54 years',
+                                         'Age: Male - 55 to 59 years',
+                                         'Age: Male - 60 and 61 years',
+                                         'Age: Male - 62 to 64 years',
+                                         'Age: Male - 65 and 66 years',
+                                         'Age: Male - 67 to 69 years',
+                                         'Age: Male - 70 to 74 years',
+                                         'Age: Male - 75 to 79 years',
+                                         'Age: Male - 80 to 84 years',
+                                         'Age: Male - 85 years and over',
+                                         'Age: Female Total',
+                                         'Age: Female - Under 1 year',
+                                         'Age: Female - 1 year',
+                                         'Age: Female - 2 years',
+                                         'Age: Female - 3 years',
+                                         'Age: Female - 4 years',
+                                         'Age: Female - 5 years',
+                                         'Age: Female - 6 years',
+                                         'Age: Female - 7 years',
+                                         'Age: Female - 8 years',
+                                         'Age: Female - 9 years',
+                                         'Age: Female - 10 years',
+                                         'Age: Female - 11 years',
+                                         'Age: Female - 12 years',
+                                         'Age: Female - 13 years',
+                                         'Age: Female - 14 years',
+                                         'Age: Female - 15 years',
+                                         'Age: Female - 16 years',
+                                         'Age: Female - 17 years',
+                                         'Age: Female - 18 years',
+                                         'Age: Female - 19 years',
+                                         'Age: Female - 20 years',
+                                         'Age: Female - 21 years',
+                                         'Age: Female - 22 to 24 years',
+                                         'Age: Female - 25 to 29 years',
+                                         'Age: Female - 30 to 34 years',
+                                         'Age: Female - 35 to 39 years',
+                                         'Age: Female - 40 to 44 years',
+                                         'Age: Female - 45 to 49 years',
+                                         'Age: Female - 50 to 54 years',
+                                         'Age: Female - 55 to 59 years',
+                                         'Age: Female - 60 and 61 years',
+                                         'Age: Female - 62 to 64 years',
+                                         'Age: Female - 65 and 66 years',
+                                         'Age: Female - 67 to 69 years',
+                                         'Age: Female - 70 to 74 years',
+                                         'Age: Female - 75 to 79 years',
+                                         'Age: Female - 80 to 84 years',
+                                         'Age: Female - 85 years and over',
+                                         'Median Household Income',
+                                         'Total Rental Contracts',
+                                         'Rental Contracts: Monthly - With Cash Rent Total',
+                                         'Rental Contracts: Monthly - Less than $100',
+                                         'Rental Contracts: Monthly - $100 to $149',
+                                         'Rental Contracts: Monthly - $150 to $199',
+                                         'Rental Contracts: Monthly - $200 to $249',
+                                         'Rental Contracts: Monthly - $250 to $299',
+                                         'Rental Contracts: Monthly - $300 to $349',
+                                         'Rental Contracts: Monthly - $350 to $399',
+                                         'Rental Contracts: Monthly - $400 to $449',
+                                         'Rental Contracts: Monthly - $450 to $499',
+                                         'Rental Contracts: Monthly - $500 to $549',
+                                         'Rental Contracts: Monthly - $550 to $599',
+                                         'Rental Contracts: Monthly - $600 to $649',
+                                         'Rental Contracts: Monthly - $650 to $699',
+                                         'Rental Contracts: Monthly - $700 to $749',
+                                         'Rental Contracts: Monthly - $750 to $799',
+                                         'Rental Contracts: Monthly - $800 to $899',
+                                         'Rental Contracts: Monthly - $900 to $999',
+                                         'Rental Contracts: Monthly - $1000 to $1249',
+                                         'Rental Contracts: Monthly - $1250 to $1499',
+                                         'Rental Contracts: Monthly - $1500 to $1999',
+                                         'Rental Contracts: Monthly - $2000 or more',
+                                         'Rental Contracts: Monthly - No Cash Rent Total',
+                                         'Median Gross Rent',
+                                         'Total Mortgages',
+                                         'Mortgages: Monthly - Less than $200',
+                                         'Mortgages: Monthly - $200 to $299',
+                                         'Mortgages: Monthly - $300 to $399',
+                                         'Mortgages: Monthly - $400 to $499',
+                                         'Mortgages: Monthly - $500 to $599',
+                                         'Mortgages: Monthly - $600 to $699',
+                                         'Mortgages: Monthly - $700 to $799',
+                                         'Mortgages: Monthly - $800 to $899',
+                                         'Mortgages: Monthly - $900 to $999',
+                                         'Mortgages: Monthly - $1000 to $1249',
+                                         'Mortgages: Monthly - $1250 to $1499',
+                                         'Mortgages: Monthly - $1500 to $1999',
+                                         'Mortgages: Monthly - $2000 to $2499',
+                                         'Mortgages: Monthly - $2500 to $2999',
+                                         'Mortgages: Monthly - $3000 or more',
+                                         'Median Monthly Mortgage',
+                                         'Education: Total',
+                                         'Education: Total Male',
+                                         'Education: Male - No schooling completed',
+                                         'Education: Male - Nursery to 4th grade',
+                                         'Education: Male - 5th and 6th grade',
+                                         'Education: Male - 7th and 8th grade',
+                                         'Education: Male - 9th grade',
+                                         'Education: Male - 10th grade',
+                                         'Education: Male - 11th grade',
+                                         'Education: Male - 12th grade no diploma',
+                                         'Education: Male - High school graduate (includes equivalency)',
+                                         'Education: Male - Some college less than 1 year',
+                                         'Education: Male - Some college 1 or more years no degree',
+                                         'Education: Male - Associate degree',
+                                         'Education: Male - Bachelors degree',
+                                         'Education: Male - Masters degree',
+                                         'Education: Male - Professional school degree',
+                                         'Education: Male - Doctorate degree',
+                                         'Education: Total Female',
+                                         'Education: Female - No schooling completed',
+                                         'Education: Female - Nursery to 4th grade',
+                                         'Education: Female - 5th and 6th grade',
+                                         'Education: Female - 7th and 8th grade',
+                                         'Education: Female - 9th grade',
+                                         'Education: Female - 10th grade',
+                                         'Education: Female - 11th grade',
+                                         'Education: Female - 12th grade no diploma',
+                                         'Education: Female - High school graduate (includes equivalency)',
+                                         'Education: Female - Some college less than 1 year',
+                                         'Education: Female - Some college 1 or more years no degree',
+                                         'Education: Female - Associate degree',
+                                         'Education: Female - Bachelors degree',
+                                         'Education: Female - Masters degree',
+                                         'Education: Female - Professional school degree',
+                                         'Education: Female - Doctorate degree',
+                                         'Income: Total',
+                                         'Income: Less than $10000',
+                                         'Income: $10000 to $14999',
+                                         'Income: $15000 to $19999',
+                                         'Income: $20000 to $24999',
+                                         'Income: $25000 to $29999',
+                                         'Income: $30000 to $34999',
+                                         'Income: $35000 to $39999',
+                                         'Income: $40000 to $44999',
+                                         'Income: $45000 to $49999',
+                                         'Income: $50000 to $59999',
+                                         'Income: $60000 to $74999',
+                                         'Income: $75000 to $99999',
+                                         'Income: $100000 to $124999',
+                                         'Income: $125000 to $149999',
+                                         'Income: $150000 to $199999',
+                                         'Income: $200000 or more',
+                                         'Aggregate Household Income')
+
+# Add in columns containing county data
+census_2000_raw_assembled$"County Median Household Income" <- 39797
+census_2000_raw_assembled$"County Median Rent" <- 615
+census_2000_raw_assembled$"County Median Monthly Mortgage" <- 1019
+
+# Get tract number as a string, make sure that it has the correct number of 00s at the front and pad it if necessary
+census_2000_raw_assembled$tract <- stri_pad_right(census_2000_raw_assembled$tract, 6, 0)
+
+# Write out to a CSV to clean up further
+write_csv(census_2000_raw_assembled, 'data/census_2000_raw_assembled.csv')
+```
+## Get the Data: 2010
+Do the same thing, but with slightly different variable names.
+``` {r}
+# Read in the 2010 schema
+schema_2010 <- read_excel('data/schema.xlsx', sheet = '2010 names')
+
+# Iterate over the census API call
+for (i in 1:nrow(schema_2010)) {
+  assign(paste('census_2010_raw_',i,sep = ''), getCensus(
+    name = "acs/acs5",
+    vintage = "2010",
+    vars = c("GEO_ID",
+             schema_2010$api_name[i]),
+    region = "tract:*",
+    regionin = "state:47+county:037"))
+}
+
+# Combine all the CSVs into one dataframe
+census_2010_raw_assembled <- Reduce(function(x, y) merge(x, y, all=TRUE),
+                                    list(census_2010_raw_1,
+                                        census_2010_raw_2,
+                                        census_2010_raw_3,
+                                        census_2010_raw_4,
+                                        census_2010_raw_5,
+                                        census_2010_raw_6,
+                                        census_2010_raw_7,
+                                        census_2010_raw_8,
+                                        census_2010_raw_9,
+                                        census_2010_raw_10,
+                                        census_2010_raw_11,
+                                        census_2010_raw_12,
+                                        census_2010_raw_13,
+                                        census_2010_raw_14,
+                                        census_2010_raw_15,
+                                        census_2010_raw_16,
+                                        census_2010_raw_17,
+                                        census_2010_raw_18,
+                                        census_2010_raw_19,
+                                        census_2010_raw_20,
+                                        census_2010_raw_21,
+                                        census_2010_raw_22,
+                                        census_2010_raw_23,
+                                        census_2010_raw_24,
+                                        census_2010_raw_25,
+                                        census_2010_raw_26,
+                                        census_2010_raw_27,
+                                        census_2010_raw_28,
+                                        census_2010_raw_29,
+                                        census_2010_raw_30,
+                                        census_2010_raw_31,
+                                        census_2010_raw_32,
+                                        census_2010_raw_33,
+                                        census_2010_raw_34,
+                                        census_2010_raw_35,
+                                        census_2010_raw_36,
+                                        census_2010_raw_37,
+                                        census_2010_raw_38,
+                                        census_2010_raw_39,
+                                        census_2010_raw_40,
+                                        census_2010_raw_41,
+                                        census_2010_raw_42,
+                                        census_2010_raw_43,
+                                        census_2010_raw_44,
+                                        census_2010_raw_45,
+                                        census_2010_raw_46,
+                                        census_2010_raw_47,
+                                        census_2010_raw_48,
+                                        census_2010_raw_49,
+                                        census_2010_raw_50,
+                                        census_2010_raw_51,
+                                        census_2010_raw_52,
+                                        census_2010_raw_53,
+                                        census_2010_raw_54,
+                                        census_2010_raw_55,
+                                        census_2010_raw_56,
+                                        census_2010_raw_57,
+                                        census_2010_raw_58,
+                                        census_2010_raw_59,
+                                        census_2010_raw_60,
+                                        census_2010_raw_61,
+                                        census_2010_raw_62,
+                                        census_2010_raw_63,
+                                        census_2010_raw_64,
+                                        census_2010_raw_65,
+                                        census_2010_raw_66,
+                                        census_2010_raw_67,
+                                        census_2010_raw_68,
+                                        census_2010_raw_69,
+                                        census_2010_raw_70,
+                                        census_2010_raw_71,
+                                        census_2010_raw_72,
+                                        census_2010_raw_73,
+                                        census_2010_raw_74,
+                                        census_2010_raw_75,
+                                        census_2010_raw_76,
+                                        census_2010_raw_77,
+                                        census_2010_raw_78,
+                                        census_2010_raw_79,
+                                        census_2010_raw_80,
+                                        census_2010_raw_81,
+                                        census_2010_raw_82,
+                                        census_2010_raw_83,
+                                        census_2010_raw_84,
+                                        census_2010_raw_85,
+                                        census_2010_raw_86,
+                                        census_2010_raw_87,
+                                        census_2010_raw_88,
+                                        census_2010_raw_89,
+                                        census_2010_raw_90,
+                                        census_2010_raw_91,
+                                        census_2010_raw_92,
+                                        census_2010_raw_93,
+                                        census_2010_raw_94,
+                                        census_2010_raw_95,
+                                        census_2010_raw_96,
+                                        census_2010_raw_97,
+                                        census_2010_raw_98,
+                                        census_2010_raw_99,
+                                        census_2010_raw_100,
+                                        census_2010_raw_101,
+                                        census_2010_raw_102,
+                                        census_2010_raw_103,
+                                        census_2010_raw_104,
+                                        census_2010_raw_105,
+                                        census_2010_raw_106,
+                                        census_2010_raw_107,
+                                        census_2010_raw_108,
+                                        census_2010_raw_109,
+                                        census_2010_raw_110,
+                                        census_2010_raw_111,
+                                        census_2010_raw_112,
+                                        census_2010_raw_113,
+                                        census_2010_raw_114,
+                                        census_2010_raw_115,
+                                        census_2010_raw_116,
+                                        census_2010_raw_117,
+                                        census_2010_raw_118,
+                                        census_2010_raw_119,
+                                        census_2010_raw_120,
+                                        census_2010_raw_121,
+                                        census_2010_raw_122,
+                                        census_2010_raw_123,
+                                        census_2010_raw_124,
+                                        census_2010_raw_125,
+                                        census_2010_raw_126,
+                                        census_2010_raw_127,
+                                        census_2010_raw_128,
+                                        census_2010_raw_129,
+                                        census_2010_raw_130,
+                                        census_2010_raw_131,
+                                        census_2010_raw_132,
+                                        census_2010_raw_133,
+                                        census_2010_raw_134,
+                                        census_2010_raw_135,
+                                        census_2010_raw_136,
+                                        census_2010_raw_137,
+                                        census_2010_raw_138,
+                                        census_2010_raw_139,
+                                        census_2010_raw_140,
+                                        census_2010_raw_141,
+                                        census_2010_raw_142,
+                                        census_2010_raw_143,
+                                        census_2010_raw_144,
+                                        census_2010_raw_145,
+                                        census_2010_raw_146,
+                                        census_2010_raw_147,
+                                        census_2010_raw_148,
+                                        census_2010_raw_149,
+                                        census_2010_raw_150,
+                                        census_2010_raw_151,
+                                        census_2010_raw_152,
+                                        census_2010_raw_153,
+                                        census_2010_raw_154,
+                                        census_2010_raw_155,
+                                        census_2010_raw_156,
+                                        census_2010_raw_157,
+                                        census_2010_raw_158,
+                                        census_2010_raw_159,
+                                        census_2010_raw_160,
+                                        census_2010_raw_161,
+                                        census_2010_raw_162,
+                                        census_2010_raw_163,
+                                        census_2010_raw_164,
+                                        census_2010_raw_165,
+                                        census_2010_raw_166))
+
+# Write out data to a CSV
+#write_csv(census_2010_raw_assembled, 'data/census_2010_raw_assembled.csv')
+
+# Update column names
+colnames(census_2010_raw_assembled) <- c('state',
+                                         'county',
+                                         'tract',
+                                         'GEO_ID',
+                                         'Race: Total',
+                                         'Race: Total (Non-Hispanic)',
+                                         'Race: White (Non-Hispanic)',
+                                         'Race: Black or African American (Non-Hispanic)',
+                                         'Race: American Indian and Alaska Native (Non-Hispanic)',
+                                         'Race: Asian (Non-Hispanic)',
+                                         'Race: Native Hawaiian and Other Pacific Islander  (Non-Hispanic)',
+                                         'Race: Other (Non-Hispanic)',
+                                         'Race: Two or More (Non-Hispanic)',
+                                         'Race: Two or More Inc Other (Non-Hispanic)',
+                                         'Race: Three or More (Non-Hispanic)',
+                                         'Race: Total (Hispanic)',
+                                         'Race: White (Hispanic)',
+                                         'Race: Black or African American (Hispanic)',
+                                         'Race: American Indian and Alaska Native (Hispanic)',
+                                         'Race: Asian (Hispanic)',
+                                         'Race: Native Hawaiian and Other Pacific Islander  (Hispanic)',
+                                         'Race: Other (Hispanic)',
+                                         'Race: Two or More (Hispanic)',
+                                         'Race: Two or More Inc Other (Hispanic)',
+                                         'Race: Three or More (Hispanic)',
+                                         'Age: Total',
+                                         'Age: Male Total',
+                                         'Age: Male - Under 5 years',
+                                         'Age: Male - 5 to 9 years',
+                                         'Age: Male - 10 to 14 years',
+                                         'Age: Male - 15 to 17 years',
+                                         'Age: Male - 18 and 19 years',
+                                         'Age: Male - 20 years',
+                                         'Age: Male - 21 years',
+                                         'Age: Male - 22 to 24 years',
+                                         'Age: Male - 25 to 29 years',
+                                         'Age: Male - 30 to 34 years',
+                                         'Age: Male - 35 to 39 years',
+                                         'Age: Male - 40 to 44 years',
+                                         'Age: Male - 45 to 49 years',
+                                         'Age: Male - 50 to 54 years',
+                                         'Age: Male - 55 to 59 years',
+                                         'Age: Male - 60 and 61 years',
+                                         'Age: Male - 62 to 64 years',
+                                         'Age: Male - 65 and 66 years',
+                                         'Age: Male - 67 to 69 years',
+                                         'Age: Male - 70 to 74 years',
+                                         'Age: Male - 75 to 79 years',
+                                         'Age: Male - 80 to 84 years',
+                                         'Age: Male - 85 years and over',
+                                         'Age: Female Total',
+                                         'Age: Female - Under 5 years',
+                                         'Age: Female - 5 to 9 years',
+                                         'Age: Female - 10 to 14 years',
+                                         'Age: Female - 15 to 17 years',
+                                         'Age: Female - 18 and 19 years',
+                                         'Age: Female - 20 years',
+                                         'Age: Female - 21 years',
+                                         'Age: Female - 22 to 24 years',
+                                         'Age: Female - 25 to 29 years',
+                                         'Age: Female - 30 to 34 years',
+                                         'Age: Female - 35 to 39 years',
+                                         'Age: Female - 40 to 44 years',
+                                         'Age: Female - 45 to 49 years',
+                                         'Age: Female - 50 to 54 years',
+                                         'Age: Female - 55 to 59 years',
+                                         'Age: Female - 60 and 61 years',
+                                         'Age: Female - 62 to 64 years',
+                                         'Age: Female - 65 and 66 years',
+                                         'Age: Female - 67 to 69 years',
+                                         'Age: Female - 70 to 74 years',
+                                         'Age: Female - 75 to 79 years',
+                                         'Age: Female - 80 to 84 years',
+                                         'Age: Female - 85 years and over',
+                                         'Income: Total',
+                                         'Income: Less than $10000',
+                                         'Income: $10000 to $14999',
+                                         'Income: $15000 to $19999',
+                                         'Income: $20000 to $24999',
+                                         'Income: $25000 to $29999',
+                                         'Income: $30000 to $34999',
+                                         'Income: $35000 to $39999',
+                                         'Income: $40000 to $44999',
+                                         'Income: $45000 to $49999',
+                                         'Income: $50000 to $59999',
+                                         'Income: $60000 to $74999',
+                                         'Income: $75000 to $99999',
+                                         'Income: $100000 to $124999',
+                                         'Income: $125000 to $149999',
+                                         'Income: $150000 to $199999',
+                                         'Income: $200000 or more',
+                                         'Median Household Income',
+                                         'Total Rental Contracts',
+                                         'Rental Contracts: Monthly - With Cash Rent Total',
+                                         'Rental Contracts: Monthly - Less than $100',
+                                         'Rental Contracts: Monthly - $100 to $149',
+                                         'Rental Contracts: Monthly - $150 to $199',
+                                         'Rental Contracts: Monthly - $200 to $249',
+                                         'Rental Contracts: Monthly - $250 to $299',
+                                         'Rental Contracts: Monthly - $300 to $349',
+                                         'Rental Contracts: Monthly - $350 to $399',
+                                         'Rental Contracts: Monthly - $400 to $449',
+                                         'Rental Contracts: Monthly - $450 to $499',
+                                         'Rental Contracts: Monthly - $500 to $549',
+                                         'Rental Contracts: Monthly - $550 to $599',
+                                         'Rental Contracts: Monthly - $600 to $649',
+                                         'Rental Contracts: Monthly - $650 to $699',
+                                         'Rental Contracts: Monthly - $700 to $749',
+                                         'Rental Contracts: Monthly - $750 to $799',
+                                         'Rental Contracts: Monthly - $800 to $899',
+                                         'Rental Contracts: Monthly - $900 to $999',
+                                         'Rental Contracts: Monthly - $1000 to $1249',
+                                         'Rental Contracts: Monthly - $1250 to $1499',
+                                         'Rental Contracts: Monthly - $1500 to $1999',
+                                         'Rental Contracts: Monthly - $2000 or more',
+                                         'Rental Contracts: Monthly - No Cash Rent Total',
+                                         'Median Gross Rent',
+                                         'Total Mortgages',
+                                         'Mortgages: Monthly - Less than $200',
+                                         'Mortgages: Monthly - $200 to $299',
+                                         'Mortgages: Monthly - $300 to $399',
+                                         'Mortgages: Monthly - $400 to $499',
+                                         'Mortgages: Monthly - $500 to $599',
+                                         'Mortgages: Monthly - $600 to $699',
+                                         'Mortgages: Monthly - $700 to $799',
+                                         'Mortgages: Monthly - $800 to $899',
+                                         'Mortgages: Monthly - $900 to $999',
+                                         'Mortgages: Monthly - $1000 to $1249',
+                                         'Mortgages: Monthly - $1250 to $1499',
+                                         'Mortgages: Monthly - $1500 to $1999',
+                                         'Mortgages: Monthly - $2000 to $2499',
+                                         'Mortgages: Monthly - $2500 to $2999',
+                                         'Mortgages: Monthly - $3000 or more',
+                                         'Median Monthly Mortgage',
+                                         'Education: Total',
+                                         'Education: Total Male',
+                                         'Education: Male - No schooling completed',
+                                         'Education: Male - Nursery to 4th grade',
+                                         'Education: Male - 5th and 6th grade',
+                                         'Education: Male - 7th and 8th grade',
+                                         'Education: Male - 9th grade',
+                                         'Education: Male - 10th grade',
+                                         'Education: Male - 11th grade',
+                                         'Education: Male - 12th grade no diploma',
+                                         'Education: Male - High school graduate (includes equivalency)',
+                                         'Education: Male - Some college less than 1 year',
+                                         'Education: Male - Some college 1 or more years no degree',
+                                         'Education: Male - Associate degree',
+                                         'Education: Male - Bachelors degree',
+                                         'Education: Male - Masters degree',
+                                         'Education: Male - Professional school degree',
+                                         'Education: Male - Doctorate degree',
+                                         'Education: Total Female',
+                                         'Education: Female - No schooling completed',
+                                         'Education: Female - Nursery to 4th grade',
+                                         'Education: Female - 5th and 6th grade',
+                                         'Education: Female - 7th and 8th grade',
+                                         'Education: Female - 9th grade',
+                                         'Education: Female - 10th grade',
+                                         'Education: Female - 11th grade',
+                                         'Education: Female - 12th grade no diploma',
+                                         'Education: Female - High school graduate (includes equivalency)',
+                                         'Education: Female - Some college less than 1 year',
+                                         'Education: Female - Some college 1 or more years no degree',
+                                         'Education: Female - Associate degree',
+                                         'Education: Female - Bachelors degree',
+                                         'Education: Female - Masters degree',
+                                         'Education: Female - Professional school degree',
+                                         'Education: Female - Doctorate degree',
+                                         'Aggregate Household Income')
+
+# Add in county-level stats
+census_2010_raw_assembled$"County Median Household Income" <- 45668
+census_2010_raw_assembled$"County Median Rent" <- 776
+census_2010_raw_assembled$"County Median Monthly Mortgage" <- 1346
+
+# Write out to a CSV for further cleaning
+write_csv(census_2010_raw_assembled, 'data/census_2010_raw_assembled.csv')
 ```
